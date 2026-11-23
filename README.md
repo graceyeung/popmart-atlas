@@ -1,4 +1,4 @@
-# Capsule Atlas: Pop Mart stores around the world
+# Pop Mart Atlas: Pop Mart stores around the world
 
 An interactive, single-page map of Pop Mart retail stores worldwide (flagships, stores and pop-ups).
 

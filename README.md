@@ -1,5 +1,7 @@
 # Pop Mart Atlas: Pop Mart stores around the world
 
+**🌍 [View the live site](https://graceyeung.github.io/popmart-atlas/)**
+
 An interactive, single-page map of Pop Mart retail stores worldwide (flagships, stores and pop-ups).
 
 ## Features

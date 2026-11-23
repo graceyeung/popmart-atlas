@@ -1,0 +1,824 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Capsule Atlas: Pop Mart stores</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+/*
+VOICE: playful toy-shop, bright and bouncy, but every fact is clear and readable.
+IDEA: a capsule-toy vending machine. Each store is a gumball capsule, each card is a capsule ticket.
+PICTURE: the world map itself, scattered with two-tone capsules that cluster into striped gumball piles.
+COLOUR and TYPE: sunshine yellow ground, bubblegum pink flagships, sky-blue stores, tangerine pop-ups; Fredoka + Nunito.
+LAYOUT: sidebar machine on the left, full-bleed map on the right; below 760px the sidebar becomes a bottom drawer.
+*/
+:root{color-scheme:light dark;
+--bg:light-dark(#ffd23f,#1b1840);--panel:light-dark(#fffaf0,#262256);--card:light-dark(#ffffff,#2f2a66);
+--ink:light-dark(#231a3d,#f6f2ff);--soft:light-dark(#5d5478,#c4bde6);--line:light-dark(#efe3c8,#3d3880);
+--flag:#ff4f8b;--std:#2b9cf2;--pop:#ff9a1f;--mint:#1fbf8f;
+--sea:light-dark(#bfe7ff,#121035);--land:light-dark(#fff6dd,#2c2868);--coast:light-dark(#f3c86b,#5b54b0);
+--shadow:0 6px 0 light-dark(#e0b52a,#0c0a26);--r:22px}
+:root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 Nunito,system-ui,sans-serif;overflow:hidden}
+h1,h2,h3{font-family:Fredoka,Nunito,sans-serif;margin:0;line-height:1.05;text-wrap:balance}
+button,input,select{font:inherit;color:inherit}
+.app{display:grid;grid-template-columns:400px minmax(0,1fr);height:100dvh}
+/* sidebar = vending machine */
+.side{display:flex;flex-direction:column;background:var(--bg);padding:16px 14px 0 16px;gap:12px;overflow:hidden;z-index:1200}
+.brand{display:flex;align-items:center;gap:12px}
+.brand h1{font-size:32px;font-weight:700;letter-spacing:-.5px}
+.brand p{margin:2px 0 0;font-size:14px;color:var(--soft);font-weight:700}
+.knob{flex:none;width:52px;height:52px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff 0 12%,transparent 13%),conic-gradient(var(--flag) 0 33%,var(--std) 0 66%,var(--pop) 0);box-shadow:var(--shadow);animation:spin 9s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.machine{background:var(--panel);border-radius:var(--r);box-shadow:var(--shadow);padding:14px;display:flex;flex-direction:column;gap:10px}
+.search{position:relative}
+.search input{width:100%;height:48px;border-radius:999px;border:3px solid var(--line);background:var(--card);padding:0 44px 0 18px;font-size:16px;font-weight:700;outline:none;transition:border-color .2s}
+.search input:focus{border-color:var(--std)}
+.search input::-webkit-search-cancel-button{display:none}
+.search button{position:absolute;right:6px;top:6px;width:36px;height:36px;border-radius:50%;border:0;background:var(--line);cursor:pointer;font-weight:800;display:none}
+.search.has button{display:block}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+select{height:44px;border-radius:14px;border:3px solid var(--line);background:var(--card);padding:0 12px;font-weight:700;flex:1 1 160px;cursor:pointer}
+.chip{height:40px;border-radius:999px;border:3px solid var(--line);background:var(--card);padding:0 14px 0 10px;font-weight:800;font-size:14px;cursor:pointer;display:inline-flex;align-items:center;gap:7px;transition:transform .15s,background .2s,border-color .2s}
+.chip:hover{transform:translateY(-2px)}
+.chip .dot{width:14px;height:14px;border-radius:50%}
+.chip[aria-pressed=false]{opacity:.45;text-decoration:line-through}
+.chip.unv .dot{background:transparent;border:2px dashed var(--soft)}
+.toolbar{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.count{font-family:Fredoka;font-weight:600;font-size:17px}
+.count b{display:inline-block;min-width:1.6em;padding:0 8px;border-radius:999px;background:var(--flag);color:#fff;text-align:center;transition:transform .25s}
+.count b.bump{transform:scale(1.25)}
+.near{height:44px;border-radius:999px;border:0;background:var(--mint);color:#fff;font-weight:800;padding:0 16px;cursor:pointer;box-shadow:0 4px 0 #128a66;transition:transform .15s}
+.near:active{transform:translateY(3px);box-shadow:0 1px 0 #128a66}
+.near.on{background:var(--ink);color:var(--bg);box-shadow:none}
+.note{font-size:13px;color:var(--soft);font-weight:700;margin:0}
+.note.warn{color:var(--ink);background:var(--card);border:3px dashed var(--pop);border-radius:14px;padding:8px 10px}
+.list{flex:1;overflow-y:auto;padding:2px 4px 14px 0;display:flex;flex-direction:column;gap:9px;scrollbar-width:thin}
+.card{all:unset;box-sizing:border-box;cursor:pointer;display:grid;grid-template-columns:34px minmax(0,1fr) auto;gap:10px;align-items:center;background:var(--card);border-radius:18px;padding:10px 12px;border:3px solid transparent;transition:transform .15s,border-color .2s;animation:pop .35s both}
+.card:hover,.card:focus-visible{transform:translateX(4px);border-color:var(--std)}
+.card h3{font-size:16px;font-weight:600}
+.card p{margin:1px 0 0;font-size:13px;color:var(--soft);font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.card .km{font-family:Fredoka;font-weight:600;font-size:14px;white-space:nowrap;background:var(--bg);border-radius:999px;padding:2px 9px}
+.tag{font-size:11px;font-weight:800;border-radius:999px;padding:1px 7px;margin-left:4px;vertical-align:2px;border:2px dashed var(--pop);color:var(--ink);white-space:nowrap}
+@keyframes pop{from{opacity:0;transform:scale(.94)}}
+.empty{text-align:center;padding:24px 10px;color:var(--soft);font-weight:800}
+.foot{font-size:12.5px;color:var(--soft);padding:10px 2px 14px;border-top:3px dotted var(--line);font-weight:600}
+.foot details{margin-top:4px}.foot summary{cursor:pointer;font-weight:800;color:var(--ink)}
+.foot ol{padding-left:18px;margin:6px 0;max-height:180px;overflow:auto}
+.foot a{color:inherit;overflow-wrap:anywhere}
+/* capsules */
+.cap{display:block;width:26px;height:26px;border-radius:50%;position:relative;border:3px solid #fff;box-shadow:0 3px 0 rgba(0,0,0,.25);background:linear-gradient(180deg,var(--c) 0 50%,#fff 50%)}
+.cap::after{content:"";position:absolute;left:4px;top:3px;width:7px;height:5px;border-radius:50%;background:rgba(255,255,255,.75)}
+.cap.unv{background:#fff;border:3px dashed var(--c)}
+.cap.unv::after{display:none}
+.t-flagship{--c:var(--flag)}.t-standard{--c:var(--std)}.t-popup{--c:var(--pop)}
+.card .cap{width:30px;height:30px}
+.pin{background:none;border:0}
+.pin .cap{transition:transform .2s}
+.pin:hover .cap{transform:scale(1.25) rotate(-12deg)}
+.flag-pin .cap{width:32px;height:32px}
+.gum{display:grid;place-items:center;border-radius:50%;color:#231a3d;font:700 15px Fredoka;border:4px solid #fff;box-shadow:0 4px 0 rgba(0,0,0,.25);transition:transform .2s}
+.gum span{background:#fff;border-radius:999px;padding:0 6px;min-width:24px;text-align:center}
+.gum:hover{transform:scale(1.1)}
+.me{width:22px;height:22px;border-radius:50%;background:var(--mint);border:4px solid #fff;box-shadow:0 0 0 6px rgba(31,191,143,.35);animation:pulse 1.6s infinite}
+@keyframes pulse{50%{box-shadow:0 0 0 14px rgba(31,191,143,0)}}
+/* map + overlays */
+.mapwrap{position:relative;overflow:hidden;border-radius:var(--r) 0 0 var(--r);margin:10px 0 10px 0;box-shadow:inset 0 0 0 4px rgba(0,0,0,.05)}
+#map{position:absolute;inset:0;background:var(--sea)}
+.float{position:absolute;z-index:1000;background:var(--panel);border-radius:var(--r);box-shadow:var(--shadow);padding:14px 16px}
+.stats{top:14px;right:14px;width:270px}
+.stats h2{font-size:18px;margin-bottom:8px}
+.nums{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
+.num{background:var(--card);border-radius:16px;padding:8px 10px}
+.num b{display:block;font:700 clamp(24px,3vw,32px)/1 Fredoka}
+.num small{font-size:12.5px;font-weight:800;color:var(--soft)}
+.bars{display:flex;flex-direction:column;gap:6px}
+.bar{display:grid;grid-template-columns:96px minmax(0,1fr) 30px;gap:8px;align-items:center;font-size:13px;font-weight:800}
+.bar i{display:block;height:14px;border-radius:999px;background:repeating-linear-gradient(-45deg,var(--flag) 0 8px,#ff7aa8 8px 16px);transition:width .5s cubic-bezier(.3,1.4,.5,1)}
+.bar:nth-child(2) i{background:repeating-linear-gradient(-45deg,var(--std) 0 8px,#62b9f7 8px 16px)}
+.bar:nth-child(3) i{background:repeating-linear-gradient(-45deg,var(--pop) 0 8px,#ffbb63 8px 16px)}
+.bar:nth-child(4) i{background:repeating-linear-gradient(-45deg,var(--mint) 0 8px,#5fd6b0 8px 16px)}
+.bar:nth-child(5) i{background:repeating-linear-gradient(-45deg,#9a7cf0 0 8px,#b9a3f5 8px 16px)}
+.bar span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.bar em{font-style:normal;text-align:right}
+.mini{font-size:12px;color:var(--soft);font-weight:700;margin:8px 0 0}
+.legend{left:14px;bottom:26px;display:flex;flex-direction:column;gap:6px;font-weight:800;font-size:14px;padding:12px 14px}
+.legend div{display:flex;align-items:center;gap:8px}
+.legend .cap{width:20px;height:20px;border-width:2px}
+.toggle-stats{display:none}
+.toast{position:absolute;left:50%;top:16px;transform:translate(-50%,-30px);opacity:0;pointer-events:none;z-index:1100;background:var(--ink);color:var(--bg);font-weight:800;padding:10px 16px;border-radius:999px;max-width:min(92%,520px);text-align:center;font-size:14px;transition:transform .35s cubic-bezier(.3,1.4,.5,1)}
+.toast.show{transform:translate(-50%,0);opacity:1}
+.grab{display:none}
+/* globe extras */
+.gumball{cursor:pointer}.gumball text{font:700 13px Fredoka;fill:#231a3d}.gumball:hover{filter:brightness(1.08)}
+.gumball circle{filter:drop-shadow(0 3px 0 rgba(0,0,0,.25))}
+.dot-store.fresh{animation:fresh 1s ease-in-out infinite}
+@keyframes fresh{50%{stroke:var(--mint);stroke-width:7}}
+.colbar{cursor:pointer}.colbar .shadow{fill:rgba(0,0,0,.2)}.colbar .shine{fill:#fff;opacity:.35}
+.colbar rect:not(.shine){stroke:rgba(255,255,255,.6);stroke-width:.5}
+.colbar text{font:700 13px Fredoka;fill:var(--ink);stroke:var(--panel);stroke-width:4px;paint-order:stroke}
+.colbar:hover rect:not(.shine){filter:brightness(1.1)}
+.viewseg{top:14px;left:50%;transform:translateX(-50%);display:flex;gap:4px;padding:5px;border-radius:999px}
+.viewseg button{height:36px;border:0;border-radius:999px;background:transparent;padding:0 14px;font:600 15px Fredoka;cursor:pointer;color:var(--ink);white-space:nowrap}
+.viewseg button[aria-pressed=true]{background:var(--ink);color:var(--panel)}
+.timeline{left:50%;transform:translateX(-50%);bottom:16px;width:min(520px,calc(100% - 340px));display:flex;align-items:center;gap:12px;padding:10px 16px 10px 10px}
+.timeline #tlPlay{flex:none;width:44px;height:44px;border-radius:50%;border:0;background:var(--flag);color:#fff;font:700 18px Fredoka;cursor:pointer;box-shadow:0 4px 0 #c8336a}
+.timeline #tlPlay:active{transform:translateY(3px);box-shadow:0 1px 0 #c8336a}
+.tl-main{flex:1}
+.tl-top{display:flex;justify-content:space-between;align-items:baseline;gap:8px;font-size:13px;font-weight:800;color:var(--soft)}
+.tl-top b{font:700 17px Fredoka;color:var(--ink)}
+#tl{width:100%;accent-color:var(--flag);margin:4px 0 0;cursor:pointer}
+.tl-note{font-size:11.5px;font-weight:700;color:var(--soft);margin:0}
+.legend .how{font-size:12px;color:var(--soft);font-weight:700;margin-top:2px}
+.pp .mix{display:flex;flex-wrap:wrap;gap:4px 12px;margin:0 0 8px;font-size:13px;font-weight:800}
+.pp .mix i,.plist i{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:5px}
+.plist{list-style:none;margin:0;padding:0;max-height:220px;overflow:auto;display:flex;flex-direction:column;gap:4px}
+.plist button{all:unset;box-sizing:border-box;width:100%;cursor:pointer;padding:6px 8px;border-radius:12px;background:var(--card);font-size:13.5px;font-weight:700}
+.plist button:hover,.plist button:focus-visible{outline:2px solid var(--std)}
+.plist small{color:var(--soft)}
+/* globe */
+#map{cursor:grab;touch-action:none;user-select:none}
+#map.dragging{cursor:grabbing}
+#map svg{display:block;width:100%;height:100%}
+.halo{fill:none;stroke:light-dark(rgba(255,255,255,.7),rgba(140,130,255,.35));stroke-width:10}
+.ocean{fill:light-dark(#8fd3ff,#1f1c5c);stroke:var(--coast);stroke-width:3}
+.grat{fill:none;stroke:light-dark(rgba(255,255,255,.55),rgba(255,255,255,.08));stroke-width:.8}
+.land{fill:var(--land);stroke:var(--coast);stroke-width:.7;stroke-linejoin:round}
+.dot-store{stroke:#fff;stroke-width:2.5;cursor:pointer;transition:r .15s}
+.dot-store.unv{fill:#fff!important;stroke-dasharray:3 2;stroke-width:2.5}
+.dot-store:hover,.dot-store.sel{stroke:var(--ink)}
+.dot-me{fill:var(--mint);stroke:#fff;stroke-width:4}
+.globe-ctl{position:absolute;z-index:1000;left:14px;top:14px;display:flex;flex-direction:column;border-radius:16px;box-shadow:var(--shadow);overflow:hidden}
+.globe-ctl button{width:44px;height:44px;border:0;border-bottom:2px solid var(--line);background:var(--panel);color:var(--ink);font:700 22px Fredoka;cursor:pointer}
+.globe-ctl button:last-child{border-bottom:0}.globe-ctl button:hover{background:var(--card)}
+.gpop{position:absolute;z-index:1050;width:300px;max-width:calc(100% - 20px);transform:translate(-50%,calc(-100% - 18px));border-radius:22px;background:var(--panel);color:var(--ink);box-shadow:0 8px 0 rgba(0,0,0,.18),0 10px 30px rgba(0,0,0,.25);padding:16px 18px;font-size:14px;line-height:1.4}
+.gpop[hidden]{display:none}
+.gpop::after{content:"";position:absolute;left:50%;bottom:-8px;width:17px;height:17px;margin-left:-9px;transform:rotate(45deg);background:var(--panel)}
+.gpop .x{position:absolute;top:8px;right:8px;width:30px;height:30px;border-radius:50%;border:0;background:var(--card);font:700 20px/28px Fredoka;color:var(--ink);cursor:pointer}
+.attrib{position:absolute;right:0;bottom:0;z-index:900;background:color-mix(in srgb,var(--panel) 85%,transparent);padding:1px 8px;font-size:11.5px;border-radius:10px 0 0 0;color:var(--soft)}
+.attrib a{color:inherit}
+.pp-type{display:inline-block;font:600 12px Fredoka;color:#fff;border-radius:999px;padding:2px 10px;background:var(--c)}
+.pp h3{font-size:19px;margin:8px 30px 6px 0}
+.pp dl{margin:0;display:grid;grid-template-columns:auto 1fr;gap:3px 10px;font-size:13.5px}
+.pp dt{font-weight:800;color:var(--soft)}.pp dd{margin:0}
+.pp .warn{margin:8px 0 0;font-size:12.5px;font-weight:700;border:2px dashed var(--pop);border-radius:12px;padding:6px 8px}
+.pp .go{display:inline-flex;align-items:center;justify-content:center;margin-top:12px;height:42px;padding:0 18px;border-radius:999px;background:var(--flag);color:#fff!important;font-weight:800;text-decoration:none;box-shadow:0 4px 0 #c8336a}
+.pp .src{display:block;margin-top:8px;font-size:12px;color:var(--soft)!important}
+:focus-visible{outline:3px solid var(--std);outline-offset:2px}
+@media (max-width:760px){
+.app{display:block}
+.mapwrap{position:fixed;inset:0;margin:0;border-radius:0}
+.side{position:fixed;left:0;right:0;bottom:0;height:86dvh;border-radius:28px 28px 0 0;padding:6px 12px 0;box-shadow:0 -8px 30px rgba(0,0,0,.25);transform:translateY(calc(100% - 262px));transition:transform .4s cubic-bezier(.3,1.2,.5,1)}
+.side.open{transform:none}
+.grab{display:block;width:100%;height:30px;border:0;background:none;cursor:pointer;flex:none}
+.grab::before{content:"";display:block;margin:auto;width:56px;height:6px;border-radius:9px;background:var(--ink);opacity:.35}
+.brand{display:none}
+.machine{padding:10px;gap:8px}
+#types{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;padding-bottom:2px}
+.chip{flex:none;height:38px;padding:0 11px 0 8px;font-size:13px;gap:5px}
+.stats{top:10px;right:10px;left:auto;width:min(270px,calc(100vw - 20px));transform:translateX(calc(100% + 20px));transition:transform .35s}
+.stats.show{transform:none}
+.toggle-stats{display:block;position:absolute;top:10px;right:10px;z-index:1001;height:44px;padding:0 16px;border-radius:999px;border:0;background:var(--panel);box-shadow:var(--shadow);font:600 15px Fredoka;cursor:pointer}
+.legend{bottom:272px;left:10px;padding:8px 10px;font-size:12.5px}
+.globe-ctl{top:62px;left:10px}
+.attrib{bottom:262px}
+.viewseg{top:10px}.viewseg button{height:34px;padding:0 10px;font-size:14px}
+.timeline{bottom:272px;width:calc(100% - 20px);padding:8px 12px 8px 8px}
+.legend{display:none}
+.globe-ctl button#spin,.globe-ctl button#home{display:none}
+}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="side" id="side" aria-label="Store finder">
+    <button class="grab" id="grab" aria-label="Expand or collapse store list" aria-expanded="false"></button>
+    <div class="brand">
+      <div class="knob" aria-hidden="true"></div>
+      <div><h1>Capsule Atlas</h1><p>Pop Mart stores around the world</p></div>
+    </div>
+    <div class="machine">
+      <div class="search" id="searchBox">
+        <input id="q" type="search" placeholder="Search city, country or store" aria-label="Search by city, country or store name" autocomplete="off">
+        <button id="clearQ" aria-label="Clear search">✕</button>
+      </div>
+      <div class="row">
+        <select id="country" aria-label="Filter by country or region"><option value="">All countries &amp; regions</option></select>
+      </div>
+      <div class="row" id="types">
+        <button class="chip" data-type="flagship" aria-pressed="true"><span class="dot" style="background:var(--flag)"></span>Flagship</button>
+        <button class="chip" data-type="standard" aria-pressed="true"><span class="dot" style="background:var(--std)"></span>Store</button>
+        <button class="chip" data-type="popup" aria-pressed="true"><span class="dot" style="background:var(--pop)"></span>Pop-up</button>
+        <button class="chip unv" id="unvChip" aria-pressed="true"><span class="dot"></span>Unverified</button>
+      </div>
+      <div class="toolbar">
+        <div class="count" aria-live="polite"><b id="count">0</b> stores showing</div>
+        <button class="near" id="near">📍 Near me</button>
+      </div>
+      <p class="note" id="nearNote" hidden></p>
+    </div>
+    <div class="list" id="list" role="list"></div>
+    <footer class="foot">
+      <div><b>Data last updated: <span id="updated"></span></b> · <span id="cover"></span></div>
+      <details>
+        <summary>About the data &amp; sources</summary>
+        <p>Compiled from Pop Mart's official regional sites, mall directories and news coverage of openings. <b>Verified</b> means a reliable source confirms the store opened and no closure was found. <b>Unverified</b> means it was announced but its opening couldn't be confirmed, or only weak or conflicting reports exist. Coordinates were placed by hand at mall or street level, so treat them as approximate. Directions links search by name and address. Pop-ups that had already closed were left out.</p>
+        <p>To update: edit the JSON array in the <code>store-data</code> script tag.</p>
+        <ol id="sources"></ol>
+      </details>
+    </footer>
+  </aside>
+  <main class="mapwrap">
+    <div id="map" role="application" aria-label="Globe of stores. Drag to spin, scroll or pinch to zoom."></div>
+    <div class="globe-ctl"><button id="zin" aria-label="Zoom in">+</button><button id="zout" aria-label="Zoom out">−</button><button id="spin" aria-label="Pause spinning" title="Pause/resume spin">⏸</button><button id="home" aria-label="Reset view" title="Reset view">⌂</button></div>
+    <div class="gpop" id="gpop" hidden><button class="x" id="gpopX" aria-label="Close">×</button><div id="gpopBody"></div></div>
+    <div class="float viewseg" role="group" aria-label="Globe view"><button data-view="capsules" aria-pressed="true">● Capsules</button><button data-view="bars" aria-pressed="false">▮ Store bars</button></div>
+    <section class="float timeline" aria-label="Opening timeline">
+      <button id="tlPlay" aria-label="Play the opening timeline">▶</button>
+      <div class="tl-main">
+        <div class="tl-top"><b id="tlLabel">Now</b><span id="tlInfo"></span></div>
+        <input type="range" id="tl" min="0" max="1" step="1" value="1" aria-label="Show stores opened by this month">
+        <p class="tl-note" id="tlNote"></p>
+      </div>
+    </section>
+    <div class="attrib">Map data: <a href="https://github.com/topojson/world-atlas" target="_blank" rel="noopener">Natural Earth</a></div>
+    <button class="toggle-stats" id="toggleStats" aria-expanded="false">Stats</button>
+    <section class="float stats" id="stats" aria-label="Statistics">
+      <h2>Capsule count</h2>
+      <div class="nums">
+        <div class="num"><b id="sTotal">0</b><small>stores</small></div>
+        <div class="num"><b id="sCountries">0</b><small>countries &amp; regions</small></div>
+      </div>
+      <div class="bars" id="sTop"></div>
+      <p class="mini">Top 5 by stores matching your filters</p>
+    </section>
+    <div class="float legend" aria-label="Legend">
+      <div><span class="cap t-flagship"></span>Flagship</div>
+      <div><span class="cap t-standard"></span>Store</div>
+      <div><span class="cap t-popup"></span>Pop-up</div>
+      <div><span class="cap unv t-standard"></span>Unverified</div>
+      <div class="how">Drag to spin · scroll to zoom</div>
+    </div>
+    <div class="toast" id="toast" role="status"></div>
+  </main>
+</div>
+
+<script type="application/json" id="store-data">
+{
+"updated": "2026-11-23",
+"globalTotal": {"stores": 676, "asOf": "30 June 2026", "source": "https://insideretail.asia/2026/08/21/after-labubu-what-will-pop-mart-turn-into-its-next-global-hit/"},
+"stores": [
+{"name":"POP MART Global Flagship (HY Plaza)","country":"China","city":"Shanghai","address":"F1, HY Plaza, 288 East Nanjing Road, Huangpu","type":"flagship","opened":"2022","lat":31.2366,"lng":121.4800,"status":"verified","source":"https://english.shanghai.gov.cn/en-TrendyStores/20251205/c6eb98d2b2224f2dbd4d009ac0a5d040.html"},
+{"name":"POP MART Shimao Festival City Flagship","country":"China","city":"Shanghai","address":"G03 & M03, 1F-2F, Shimao Festival City, 829 East Nanjing Road","type":"flagship","opened":"2025-12","lat":31.2353,"lng":121.4748,"status":"verified","source":"https://english.shanghai.gov.cn/en-TrendyStores/20251205/c6eb98d2b2224f2dbd4d009ac0a5d040.html"},
+{"name":"POP MART Shanghai IFC Flagship","country":"China","city":"Shanghai","address":"Shanghai IFC Mall, 8 Century Avenue, Pudong","type":"flagship","opened":"2024","lat":31.2365,"lng":121.5016,"status":"verified","source":"https://architizer.com/projects/pop-mart-flagship-stores"},
+{"name":"POP MART Sanlitun Flagship","country":"China","city":"Beijing","address":"Taikoo Li Sanlitun, Chaoyang District","type":"flagship","opened":"2024-09","lat":39.9343,"lng":116.4540,"status":"verified","source":"https://architizer.com/projects/pop-mart-flagship-stores"},
+{"name":"POP MART Hopson One","country":"China","city":"Beijing","address":"Hopson One, Chaoyang District","type":"standard","opened":"2026-07","lat":39.8975,"lng":116.4760,"status":"verified","note":"Largest Pop Mart store in Beijing (about 500 m², two floors).","source":"https://english.beijing.gov.cn/latest/news/202607/t20260722_4777065.html"},
+{"name":"POP MART Beijing APM","country":"China","city":"Beijing","address":"Beijing APM, 138 Wangfujing Street, Dongcheng","type":"standard","opened":"","lat":39.9139,"lng":116.4100,"status":"verified","source":"https://english.visitbeijing.com.cn/article/4NDrhIZsUXp"},
+{"name":"POP MART Universal Beijing Resort","country":"China","city":"Beijing","address":"Universal Beijing Resort, Tongzhou District","type":"standard","opened":"","lat":39.8550,"lng":116.6810,"status":"verified","note":"Theme-park special edition store.","source":"https://universalbeijingresort.com/en/node/344"},
+{"name":"POP MART Hangzhou West Lake Flagship","country":"China","city":"Hangzhou","address":"Hubin Yintai in77, Shangcheng District","type":"flagship","opened":"2026-09-12","lat":30.2560,"lng":120.1640,"status":"verified","note":"Pop Mart's largest flagship in China: 1,000+ m² across three floors.","source":"https://en.people.cn/n3/2026/0916/c90000-20500067.html"},
+{"name":"POP MART Changsha IFS Flagship","country":"China","city":"Changsha","address":"Changsha IFS, 188 Jiefang West Road, Furong District","type":"flagship","opened":"2026-09-05","lat":28.1953,"lng":112.9771,"status":"verified","note":"Hunan's first flagship: two floors, 600+ m², themed on the Star People (星星人) IP.","source":"https://m.voc.com.cn/xhn/news/202609/33676410.html"},
+{"name":"POP MART Nanjing Xinjiekou Concept Store","country":"China","city":"Nanjing","address":"Xinbai Oriental Department Store (新百东方商厦), Xinjiekou","type":"standard","opened":"2026-06-26","lat":32.041,"lng":118.7842,"status":"verified","note":"Concept store with a giant Molly facade.","source":"https://www.yzwb.net/news/ch/202606/t20260628_366792.html"},
+{"name":"POP MART Chengdu IFS (SKULLPANDA theme store)","country":"China","city":"Chengdu","address":"B1 entrance, Chengdu IFS, 1 Hongxing Road Section 3, Jinjiang","type":"standard","opened":"2021-06-18","lat":30.656,"lng":104.0817,"status":"verified","note":"China's first SKULLPANDA-themed store.","source":"https://m.winshang.com/news686527.html"},
+{"name":"POP MART Chengdu MixC","country":"China","city":"Chengdu","address":"MixC Chengdu, Shuangqing Road, Chenghua District","type":"standard","opened":"","lat":30.6618,"lng":104.1036,"status":"verified","note":"About 400 m².","source":"https://m.winshang.com/news686527.html"},
+{"name":"POP MART Kuanzhai Alley","country":"China","city":"Chengdu","address":"Kuanzhai Alley scenic area, Qingyang District","type":"standard","opened":"","lat":30.6698,"lng":104.0558,"status":"verified","note":"Custom store designed for the historic scenic area.","source":"https://m.winshang.com/news686527.html"},
+{"name":"POP MART Xi'an City Flagship","country":"China","city":"Xi'an","address":"Laochenggen G Park (老城根), Lianhu District","type":"flagship","opened":"","lat":34.2785,"lng":108.929,"status":"verified","note":"First city flagship in northwest China. Pin is approximate.","source":"https://www.tmtpost.com/7557683.html"},
+{"name":"POP MART Beijing Daxing Airport","country":"China","city":"Beijing","address":"Beijing Daxing International Airport","type":"standard","opened":"2025-01","lat":39.5098,"lng":116.4106,"status":"verified","note":"'City park' themed store.","source":"https://www.tmtpost.com/7557683.html"},
+{"name":"POP MART Beijing Raffles City","country":"China","city":"Beijing","address":"Raffles City Beijing, Dongzhimen, Dongcheng District","type":"standard","opened":"","lat":39.9411,"lng":116.4331,"status":"verified","note":"Relocated from B1 to the ground floor.","source":"https://www.tmtpost.com/7557683.html"},
+{"name":"POP MART Dalian Roosevelt","country":"China","city":"Dalian","address":"Roosevelt Plaza (罗斯福), Shahekou District","type":"standard","opened":"","lat":38.9133,"lng":121.6118,"status":"verified","note":"Pin is approximate.","source":"https://www.tmtpost.com/7557683.html"},
+{"name":"POP MART Hefei City Flagship","country":"China","city":"Hefei","address":"Zhixin City (之心城), Sanli'an, Shushan District","type":"flagship","opened":"2025-06","lat":31.856,"lng":117.253,"status":"verified","note":"Anhui's first city flagship, about 600 m².","source":"http://ah.news.cn/20250626/abfd4966057e428b87b6be17feee48a3/c.html"},
+{"name":"POP MART Taiyuan North America New World","country":"China","city":"Taiyuan","address":"North America New World (北美新天地), Taiyuan","type":"standard","opened":"","lat":37.857,"lng":112.549,"status":"unverified","note":"Listed as a large store site in an investor's store-tracking post (Dec 2025); opening not confirmed by news coverage. Pin is approximate.","source":"https://xueqiu.com/5599692419/363685402"},
+{"name":"POP MART Fuzhou Yantai Hill","country":"China","city":"Fuzhou","address":"Yantai Hill historic district (烟台山), Cangshan District","type":"standard","opened":"","lat":26.049,"lng":119.312,"status":"unverified","note":"Listed as a large store site in an investor's store-tracking post (Dec 2025); opening not confirmed by news coverage.","source":"https://xueqiu.com/5599692419/363685402"},
+{"name":"POP MART Shenzhen Upperhills","country":"China","city":"Shenzhen","address":"Upperhills (深业上城), Futian District","type":"standard","opened":"","lat":22.556,"lng":114.06,"status":"unverified","note":"Listed as a large store site in an investor's store-tracking post (Dec 2025); opening not confirmed by news coverage. Standalone building.","source":"https://xueqiu.com/5599692419/363685402"},
+{"name":"POP MART Xiamen SM City","country":"China","city":"Xiamen","address":"SM City Xiamen, Huli District","type":"standard","opened":"","lat":24.5055,"lng":118.1265,"status":"unverified","note":"Listed as a large store site in an investor's store-tracking post (Dec 2025); opening not confirmed by news coverage.","source":"https://xueqiu.com/5599692419/363685402"},
+{"name":"POP MART Shenyang Joy City","country":"China","city":"Shenyang","address":"Joy City Shenyang (大悦城), Dadong District","type":"standard","opened":"","lat":41.803,"lng":123.466,"status":"unverified","note":"Listed as a large store site in an investor's store-tracking post (Dec 2025); opening not confirmed by news coverage.","source":"https://xueqiu.com/5599692419/363685402"},
+{"name":"POP MART Chongqing Starlight Place","country":"China","city":"Chongqing","address":"Chongqing Starlight Place (光环购物公园), Liangjiang New Area","type":"standard","opened":"","lat":29.668,"lng":106.565,"status":"unverified","note":"Listed as a large store site in an investor's store-tracking post (Dec 2025); opening not confirmed by news coverage. Pin is approximate.","source":"https://xueqiu.com/5599692419/363685402"},
+{"name":"POP MART Collection (Chengdu SKP)","country":"China","city":"Chengdu","address":"2F, SKP Chengdu, Tianfu Avenue","type":"standard","opened":"2025-05-24","lat":30.5795,"lng":104.0640,"status":"verified","note":"Collectors' concept store.","source":"https://jingdaily.com/intels/2025-05/26/pop-mart-opens-collector-store-chengdu-skp"},
+{"name":"POP MART Harbour City","country":"Hong Kong SAR","city":"Hong Kong","address":"Harbour City, Canton Road, Tsim Sha Tsui","type":"standard","opened":"2020-12","lat":22.2960,"lng":114.1685,"status":"verified","source":"https://insideretail.com.au/sectors/gifts/how-toy-giant-pop-mart-thinks-local-dominates-global-202206"},
+{"name":"POP MART K11 Art Mall","country":"Hong Kong SAR","city":"Hong Kong","address":"K11 Art Mall, 18 Hanoi Road, Tsim Sha Tsui","type":"standard","opened":"2020-12","lat":22.2975,"lng":114.1745,"status":"verified","source":"https://insideretail.com.au/sectors/gifts/how-toy-giant-pop-mart-thinks-local-dominates-global-202206"},
+{"name":"POP MART ifc mall","country":"Hong Kong SAR","city":"Hong Kong","address":"ifc mall, 8 Finance Street, Central","type":"standard","opened":"","lat":22.2850,"lng":114.1585,"status":"verified","source":"https://ifc.com.hk/en/mall/shop/pop-mart"},
+{"name":"POP MART Hong Kong International Airport","country":"Hong Kong SAR","city":"Hong Kong","address":"Terminal 1, Hong Kong International Airport","type":"standard","opened":"2024-08","lat":22.3135,"lng":113.9145,"status":"verified","source":"https://hongkongairport.com/en/shop-dine/shopping/pop-mart"},
+{"name":"POP MART Galaxy Macau","country":"Macau SAR","city":"Macau","address":"Galaxy Macau, Cotai","type":"standard","opened":"","lat":22.1485,"lng":113.5530,"status":"verified","source":"https://www.galaxymacau.com/shopping/store-directory/pop-mart"},
+{"name":"POP MART Ximen Flagship","country":"Taiwan","city":"Taipei","address":"Ximending, Wanhua District (near Ximen MRT exit 6)","type":"flagship","opened":"2024","lat":25.0430,"lng":121.5065,"status":"verified","note":"Four-storey flagship.","source":"https://taiwanderers.com/pop-mart-ximending-taipei/"},
+{"name":"POP MART Shin Kong Mitsukoshi A11","country":"Taiwan","city":"Taipei","address":"1F, Shin Kong Mitsukoshi A11, Xinyi District","type":"standard","opened":"2022-09","lat":25.0372,"lng":121.5667,"status":"verified","note":"First store in Taiwan.","source":"https://insideretail.asia/2022/09/13/pop-mart-opens-its-first-taiwan-store"},
+{"name":"POP MART Harajuku Flagship","country":"Japan","city":"Tokyo","address":"Jingumae, Shibuya-ku (5 min from Meiji-jingumae Station, exit 7)","type":"flagship","opened":"2022-07-16","lat":35.6690,"lng":139.7050,"status":"verified","source":"https://en.japantravel.com/places/japan/pop-mart-harajuku-store/782"},
+{"name":"POP MART Shibuya PARCO","country":"Japan","city":"Tokyo","address":"5F, Shibuya PARCO, 15-1 Udagawacho, Shibuya-ku","type":"standard","opened":"","lat":35.6620,"lng":139.6987,"status":"verified","source":"https://en.shibuya.parco.jp/shop/detail/?cd=026862"},
+{"name":"POP MART DiverCity Tokyo Plaza","country":"Japan","city":"Tokyo","address":"DiverCity Tokyo Plaza, Odaiba, Koto-ku","type":"standard","opened":"","lat":35.6250,"lng":139.7756,"status":"verified","source":"https://matcha-jp.com/en/25305"},
+{"name":"POP MART Narita Airport","country":"Japan","city":"Narita","address":"Airport Mall 4F, Terminal 2, Narita International Airport","type":"standard","opened":"","lat":35.7730,"lng":140.3870,"status":"verified","source":"https://www.narita-airport.jp/en/shop/shop-search/t2mn04_popmart/"},
+{"name":"POP MART Osaka Namba Flagship","country":"Japan","city":"Osaka","address":"Ebisubashi-suji shopping street, Namba, Chuo-ku","type":"flagship","opened":"2025-09-06","lat":34.6665,"lng":135.5015,"status":"verified","note":"Largest store in Japan; three storeys.","source":"https://insideretail.asia/2025/09/18/pop-mart-opens-largest-store-in-japan/"},
+{"name":"POP MART Naha Kokusai-dori","country":"Japan","city":"Naha","address":"Kokusai-dori, Naha, Okinawa","type":"standard","opened":"2026-07-25","lat":26.2155,"lng":127.6880,"status":"verified","source":"https://prtimes.jp/main/html/rd/p/000000038.000062707.html"},
+{"name":"POP MART Hongdae Flagship","country":"South Korea","city":"Seoul","address":"346-40 Seogyo-dong, Mapo-gu","type":"flagship","opened":"2022-07-02","lat":37.5545,"lng":126.9225,"status":"verified","source":"https://www.ktriptips.com/eng/shopping/4030823"},
+{"name":"POP MART Myeong-dong","country":"South Korea","city":"Seoul","address":"Myeong-dong, Jung-gu","type":"standard","opened":"","lat":37.5630,"lng":126.9840,"status":"verified","source":"https://v.daum.net/v/20250701070234614?f=p"},
+{"name":"POP MART COEX","country":"South Korea","city":"Seoul","address":"COEX Mall, Gangnam-gu","type":"standard","opened":"","lat":37.5115,"lng":127.0595,"status":"verified","source":"https://v.daum.net/v/20250701070234614?f=p"},
+{"name":"HIRONO Gwangjang Market Store","country":"South Korea","city":"Seoul","address":"Gwangjang Market, Jongno-gu","type":"standard","opened":"2026-06-05","lat":37.5700,"lng":126.9995,"status":"verified","note":"Pop Mart character store.","source":"https://www.koreatimes.co.kr/business/companies/20260605/pop-mart-opens-koreas-1st-regular-hirono-store-in-seouls-gwangjang-market"},
+{"name":"POP MART Shinsegae Centum City","country":"South Korea","city":"Busan","address":"Shinsegae Centum City, Haeundae-gu","type":"standard","opened":"2025-08","lat":35.1690,"lng":129.1295,"status":"verified","source":"https://www.asiae.co.kr/en/article/2025081309051484239"},
+{"name":"POP MART Funan Flagship","country":"Singapore","city":"Singapore","address":"107 North Bridge Road, #01-02, Funan","type":"flagship","opened":"2021-01","lat":1.2912,"lng":103.8500,"status":"verified","note":"First store in Singapore.","source":"https://thesmartlocal.com/read/pop-mart-singapore/"},
+{"name":"POP MART ION Orchard","country":"Singapore","city":"Singapore","address":"ION Orchard, 2 Orchard Turn","type":"standard","opened":"2024-08","lat":1.3040,"lng":103.8320,"status":"verified","source":"https://timeout.com/singapore/news/we-visited-pop-marts-newest-and-largest-store-in-singapore-here-are-the-highlights-080224"},
+{"name":"POP MART Resorts World Sentosa Flagship","country":"Singapore","city":"Singapore","address":"Weave, Resorts World Sentosa (opposite Universal Studios Singapore)","type":"flagship","opened":"2026-07-30","lat":1.2560,"lng":103.8210,"status":"verified","note":"Two storeys, with Southeast Asia's first POP BAKERY upstairs.","source":"https://www.timeout.com/singapore/news/pop-marts-first-pop-bakery-in-southeast-asia-just-opened-at-resorts-world-sentosa-073026"},
+{"name":"POP MART Changi Airport","country":"Singapore","city":"Singapore","address":"Changi Airport (terminal not confirmed)","type":"standard","opened":"","lat":1.3602,"lng":103.9898,"status":"verified","source":"https://equalocean.com/news/2025122921702-pop-mart-opens-first-offline-store-philippines"},
+{"name":"POP MART Pavilion Kuala Lumpur","country":"Malaysia","city":"Kuala Lumpur","address":"Lot 5.39.00, Level 5, Pavilion KL, 168 Jalan Bukit Bintang","type":"standard","opened":"2023-05-20","lat":3.1490,"lng":101.7135,"status":"verified","note":"First store in Malaysia.","source":"https://www.marketing-interactive.com/is-malaysia-becoming-pop-mart-s-next-big-playground-for-character-ip"},
+{"name":"POP MART The Exchange TRX","country":"Malaysia","city":"Kuala Lumpur","address":"The Exchange TRX, Tun Razak Exchange","type":"standard","opened":"2025-04-19","lat":3.1420,"lng":101.7185,"status":"verified","note":"Largest store in Malaysia.","source":"https://thesun.my/spotlight/pop-mart-opens-it-largest-store-at-the-exchange-trx-on-april-19-OM13972408"},
+{"name":"POP MART Mid Valley Megamall","country":"Malaysia","city":"Kuala Lumpur","address":"Mid Valley Megamall, Lingkaran Syed Putra","type":"standard","opened":"","lat":3.1180,"lng":101.6770,"status":"verified","source":"https://www.marketing-interactive.com/is-malaysia-becoming-pop-mart-s-next-big-playground-for-character-ip"},
+{"name":"POP MART Sunway Velocity Mall","country":"Malaysia","city":"Kuala Lumpur","address":"Sunway Velocity Mall, Cheras","type":"standard","opened":"","lat":3.1280,"lng":101.7240,"status":"verified","source":"https://www.marketing-interactive.com/is-malaysia-becoming-pop-mart-s-next-big-playground-for-character-ip"},
+{"name":"POP MART Pavilion Bukit Jalil","country":"Malaysia","city":"Kuala Lumpur","address":"Pavilion Bukit Jalil","type":"standard","opened":"","lat":3.0545,"lng":101.6735,"status":"verified","source":"https://www.marketing-interactive.com/is-malaysia-becoming-pop-mart-s-next-big-playground-for-character-ip"},
+{"name":"POP MART 1 Utama","country":"Malaysia","city":"Petaling Jaya","address":"1 Utama Shopping Centre, Bandar Utama","type":"standard","opened":"","lat":3.1505,"lng":101.6155,"status":"verified","source":"https://www.marketing-interactive.com/is-malaysia-becoming-pop-mart-s-next-big-playground-for-character-ip"},
+{"name":"POP MART Sunway Pyramid","country":"Malaysia","city":"Subang Jaya","address":"Sunway Pyramid, Bandar Sunway","type":"standard","opened":"","lat":3.0730,"lng":101.6070,"status":"verified","source":"https://www.marketing-interactive.com/is-malaysia-becoming-pop-mart-s-next-big-playground-for-character-ip"},
+{"name":"POP MART IOI City Mall","country":"Malaysia","city":"Putrajaya","address":"IOI City Mall, Putrajaya","type":"standard","opened":"","lat":2.9700,"lng":101.7130,"status":"verified","source":"https://www.marketing-interactive.com/is-malaysia-becoming-pop-mart-s-next-big-playground-for-character-ip"},
+{"name":"POP MART Sunway Carnival","country":"Malaysia","city":"Seberang Jaya","address":"Sunway Carnival Mall, Seberang Perai, Penang","type":"standard","opened":"","lat":5.3990,"lng":100.3990,"status":"verified","source":"https://www.marketing-interactive.com/is-malaysia-becoming-pop-mart-s-next-big-playground-for-character-ip"},
+{"name":"POP MART Global Landmark Store (ICONSIAM)","country":"Thailand","city":"Bangkok","address":"Top floor, ICONSIAM, Charoen Nakhon Road","type":"flagship","opened":"2025-08-08","lat":13.7266,"lng":100.5103,"status":"verified","note":"Pop Mart's largest store worldwide when it opened (760 m², two floors), with a café.","source":"https://jingdaily.com/intels/2025-08/11/pop-mart-opens-global-flagship-in-bangkok"},
+{"name":"POP MART CentralWorld Flagship","country":"Thailand","city":"Bangkok","address":"1st floor, CentralWorld, Rama I Road","type":"flagship","opened":"2023-09-20","lat":13.7466,"lng":100.5393,"status":"verified","note":"First store in Thailand.","source":"https://thestar.com.my/aseanplus/aseanplus-news/2024/07/03/pop-mart-eyes-big-expansion-plans-in-thailand"},
+{"name":"POP MART Seacon Square Concept Flagship","country":"Thailand","city":"Bangkok","address":"Seacon Square Srinakarin","type":"flagship","opened":"2025-02","lat":13.6940,"lng":100.6480,"status":"verified","source":"https://daoinsights.com/news/pop-mart-opens-largest-store-in-the-world-in-bangkok/"},
+{"name":"POP MART Terminal 21 Asok","country":"Thailand","city":"Bangkok","address":"Terminal 21, Sukhumvit Road, Asok","type":"standard","opened":"","lat":13.7376,"lng":100.5604,"status":"verified","source":"https://thestar.com.my/aseanplus/aseanplus-news/2024/07/03/pop-mart-eyes-big-expansion-plans-in-thailand"},
+{"name":"POP MART Siam Center","country":"Thailand","city":"Bangkok","address":"Siam Center, Rama I Road","type":"standard","opened":"","lat":13.7462,"lng":100.5326,"status":"verified","source":"https://thestar.com.my/aseanplus/aseanplus-news/2024/07/03/pop-mart-eyes-big-expansion-plans-in-thailand"},
+{"name":"POP MART Central Ladprao","country":"Thailand","city":"Bangkok","address":"Central Ladprao, Phahonyothin Road","type":"standard","opened":"","lat":13.8166,"lng":100.5610,"status":"verified","source":"https://thestar.com.my/aseanplus/aseanplus-news/2024/07/03/pop-mart-eyes-big-expansion-plans-in-thailand"},
+{"name":"POP MART Fashion Island","country":"Thailand","city":"Bangkok","address":"Fashion Island, Ram Inthra Road","type":"standard","opened":"","lat":13.8255,"lng":100.6790,"status":"verified","source":"https://thestar.com.my/aseanplus/aseanplus-news/2024/07/03/pop-mart-eyes-big-expansion-plans-in-thailand"},
+{"name":"POP MART Mega Bangna","country":"Thailand","city":"Samut Prakan","address":"Mega Bangna, Bang Na-Trat Road","type":"standard","opened":"2024-07-05","lat":13.6470,"lng":100.6800,"status":"verified","source":"https://thestar.com.my/aseanplus/aseanplus-news/2024/07/03/pop-mart-eyes-big-expansion-plans-in-thailand"},
+{"name":"POP MART Pattaya","country":"Thailand","city":"Pattaya","address":"Pattaya (exact mall not confirmed)","type":"standard","opened":"","lat":12.9345,"lng":100.8835,"status":"unverified","note":"Opening reported, but the mall wasn't confirmed. Pin is approximate.","source":"https://www.nationthailand.com/business/corporate/40044919"},
+{"name":"POP MART Gandaria City","country":"Indonesia","city":"Jakarta","address":"Mainstreet GF 19-20, Gandaria City Mall","type":"standard","opened":"2024-07","lat":-6.2443,"lng":106.7835,"status":"verified","note":"First store in Indonesia and Pop Mart's 100th overseas store.","source":"https://duniagames.co.id/amp/discover/article/popmart-indonesia-locations/en"},
+{"name":"POP MART Senayan City","country":"Indonesia","city":"Jakarta","address":"2nd floor #117, Senayan City Mall","type":"standard","opened":"","lat":-6.2275,"lng":106.7975,"status":"verified","source":"https://duniagames.co.id/amp/discover/article/popmart-indonesia-locations/en"},
+{"name":"POP MART Kota Kasablanka","country":"Indonesia","city":"Jakarta","address":"Upper Ground, Kota Kasablanka Mall","type":"standard","opened":"","lat":-6.2240,"lng":106.8430,"status":"verified","note":"Largest store in Indonesia.","source":"https://duniagames.co.id/amp/discover/article/popmart-indonesia-locations/en"},
+{"name":"POP MART Mall Kelapa Gading","country":"Indonesia","city":"Jakarta","address":"Mall Kelapa Gading, North Jakarta","type":"standard","opened":"","lat":-6.1575,"lng":106.9085,"status":"verified","source":"https://whatsnewindonesia.com/bali/feature/pop-mart-opening-beachwalk-bali"},
+{"name":"POP MART Pondok Indah Mall","country":"Indonesia","city":"Jakarta","address":"Pondok Indah Mall, South Jakarta","type":"standard","opened":"","lat":-6.2655,"lng":106.7840,"status":"verified","source":"https://whatsnewindonesia.com/bali/feature/pop-mart-opening-beachwalk-bali"},
+{"name":"POP MART Beachwalk Bali","country":"Indonesia","city":"Bali","address":"Level 1, Beachwalk Shopping Center, Kuta","type":"standard","opened":"2025-06-06","lat":-8.7180,"lng":115.1690,"status":"verified","source":"https://whatsnewindonesia.com/bali/feature/pop-mart-opening-beachwalk-bali"},
+{"name":"POP MART Trans Studio Mall Makassar","country":"Indonesia","city":"Makassar","address":"Trans Studio Mall Makassar","type":"standard","opened":"2026","lat":-5.1565,"lng":119.3945,"status":"verified","source":"https://www.marketing-interactive.com/pop-mart-marks-makassar-debut-with-citywide-crybaby-campaign"},
+{"name":"POP MART Surabaya","country":"Indonesia","city":"Surabaya","address":"Surabaya (exact mall not confirmed)","type":"standard","opened":"","lat":-7.2620,"lng":112.7400,"status":"unverified","note":"Store reported, but the mall wasn't confirmed. Pin is city centre.","source":"https://www.marketing-interactive.com/pop-mart-expands-to-bandung-with-new-immersive-store-experience"},
+{"name":"POP MART Bandung","country":"Indonesia","city":"Bandung","address":"Bandung (exact mall not confirmed)","type":"standard","opened":"2025","lat":-6.9175,"lng":107.6191,"status":"unverified","note":"Opening reported, but the mall wasn't confirmed. Pin is city centre.","source":"https://www.marketing-interactive.com/pop-mart-expands-to-bandung-with-new-immersive-store-experience"},
+{"name":"POP MART SM Megamall","country":"Philippines","city":"Mandaluyong","address":"SM Megamall, EDSA, Ortigas Center","type":"standard","opened":"2025-12-19","lat":14.5850,"lng":121.0565,"status":"verified","note":"First permanent store in the Philippines.","source":"https://equalocean.com/news/2025122921702"},
+{"name":"POP MART Crescent Mall","country":"Vietnam","city":"Ho Chi Minh City","address":"Crescent Mall, 101 Ton Dat Tien, District 7","type":"standard","opened":"2024-05-18","lat":10.7290,"lng":106.7190,"status":"verified","note":"First store in Vietnam.","source":"https://hkbav.org/premium-foreign-brands-expand-presence-in-vietnamese-market_news23908"},
+{"name":"POP MART Castle, Sun World Ba Na Hills","country":"Vietnam","city":"Da Nang","address":"Sun World Ba Na Hills, Hoa Vang","type":"flagship","opened":"2024","lat":15.9975,"lng":107.9880,"status":"verified","note":"Three-level castle flagship reached by cable car.","source":"https://thesmartlocal.com/read/pop-mart-castle-da-nang/amp/"},
+{"name":"POP MART Aeon Mall Ha Dong","country":"Vietnam","city":"Hanoi","address":"Aeon Mall Ha Dong, Ha Dong District","type":"standard","opened":"","lat":20.9890,"lng":105.7515,"status":"verified","note":"First store in Hanoi (opened 24 October).","source":"https://news.laodong.vn/ldt/thi-truong/pop-mart-khai-truong-cua-hang-dau-tien-tai-thu-do-ha-noi-1597292.ldo"},
+{"name":"POP MART Van Hanh Mall","country":"Vietnam","city":"Ho Chi Minh City","address":"3rd floor, Van Hanh Mall, 11 Su Van Hanh, District 10","type":"standard","opened":"2025-07","lat":10.7705,"lng":106.6695,"status":"unverified","note":"Announced for July 2025; opening not confirmed.","source":"https://en.vietstock.vn/2025/06/van-hanh-mall-creates-new-momentum-for-modern-retail-market-974-614178.htm"},
+{"name":"POP MART Melbourne Walk (Bourke St)","country":"Australia","city":"Melbourne","address":"Melbourne Walk precinct, Bourke Street","type":"standard","opened":"2025-07","lat":-37.8135,"lng":144.9640,"status":"verified","note":"Largest store in Australia (300 m²).","source":"https://www.timeout.com/australia/news/labubu-fans-pop-mart-has-just-opened-its-two-largest-stores-in-australia-101325"},
+{"name":"POP MART Westfield Sydney","country":"Australia","city":"Sydney","address":"Level 2, Westfield Sydney, Pitt Street Mall","type":"standard","opened":"2023-03-17","lat":-33.8700,"lng":151.2085,"status":"verified","source":"https://www.westfield.com.au/sydney/store/2Re3G9CXyjVvNRj8YAWD9C/pop-mart"},
+{"name":"POP MART World Square","country":"Australia","city":"Sydney","address":"World Square Centre, 644 George Street","type":"standard","opened":"2025-10-11","lat":-33.8770,"lng":151.2075,"status":"verified","source":"https://www.timeout.com/australia/news/labubu-fans-pop-mart-has-just-opened-its-two-largest-stores-in-australia-101325"},
+{"name":"POP MART Westfield Chatswood","country":"Australia","city":"Sydney","address":"Level 4, Westfield Chatswood","type":"standard","opened":"2023-03-25","lat":-33.7967,"lng":151.1830,"status":"verified","source":"https://www.westfield.com.au/sydney/store/2Re3G9CXyjVvNRj8YAWD9C/pop-mart"},
+{"name":"POP MART Westfield Parramatta","country":"Australia","city":"Sydney","address":"Level 3, Westfield Parramatta","type":"standard","opened":"2023-07","lat":-33.8170,"lng":151.0030,"status":"verified","source":"https://www.westfield.com.au/sydney/store/2Re3G9CXyjVvNRj8YAWD9C/pop-mart"},
+{"name":"POP MART Westfield Bondi Junction","country":"Australia","city":"Sydney","address":"Level 2, Westfield Bondi Junction","type":"standard","opened":"","lat":-33.8915,"lng":151.2500,"status":"verified","source":"https://www.westfield.com.au/sydney/store/2Re3G9CXyjVvNRj8YAWD9C/pop-mart"},
+{"name":"POP MART Macquarie Centre","country":"Australia","city":"Sydney","address":"Macquarie Centre, North Ryde","type":"standard","opened":"2024-04-05","lat":-33.7770,"lng":151.1210,"status":"verified","source":"https://au.popmart.com/blogs/news"},
+{"name":"POP MART Indooroopilly","country":"Australia","city":"Brisbane","address":"Indooroopilly Shopping Centre","type":"standard","opened":"2023-07-08","lat":-27.4990,"lng":152.9730,"status":"verified","source":"https://www.smartcompany.com.au/retail/pop-mart-new-stores-inside-retail/"},
+{"name":"POP MART Westfield Mt Gravatt","country":"Australia","city":"Brisbane","address":"Westfield Mt Gravatt","type":"standard","opened":"2023-09-27","lat":-27.5625,"lng":153.0805,"status":"verified","source":"https://insideretail.com.au/sectors/pop-mart-opens-largest-store-in-australia-202310"},
+{"name":"POP MART Queen Street","country":"New Zealand","city":"Auckland","address":"Queen Street, Auckland CBD","type":"standard","opened":"2022-04-22","lat":-36.8470,"lng":174.7660,"status":"verified","note":"First store in Oceania.","source":"https://heartofthecity.co.nz/auckland-shopping/pop-mart"},
+{"name":"POP MART Westfield Newmarket","country":"New Zealand","city":"Auckland","address":"Westfield Newmarket, 309 Broadway","type":"standard","opened":"2023-10-17","lat":-36.8710,"lng":174.7775,"status":"verified","source":"https://insideretail.co.nz/2023/11/06/pop-mart-opens-second-auckland-store-in-newmarket"},
+{"name":"POP MART Times Square US Flagship","country":"United States","city":"New York","address":"1540 Broadway (at W 45th St), Times Square","type":"flagship","opened":"2026 (H2, planned)","lat":40.7577,"lng":-73.9857,"status":"unverified","note":"10-year lease signed. Opening expected H2 2026, but not confirmed as of this update.","source":"https://www.pryorcashman.com/news/pryor-cashman-client-pop-mart-signs-lease-for-u-s-flagship-store-in-times-square"},
+{"name":"POP MART Fifth Avenue","country":"United States","city":"New York","address":"680 Fifth Avenue (at 54th St)","type":"flagship","opened":"","lat":40.7612,"lng":-73.9757,"status":"unverified","note":"7,600 sq ft lease signed March 2026; opening not confirmed.","source":"https://commercialobserver.com/2026/03/labubu-pop-mart-lease-680-fifth-avenue/"},
+{"name":"POP MART Tangram Mall","country":"United States","city":"Flushing (Queens)","address":"Tangram Mall, 133-36 37th Ave, Flushing, NY","type":"standard","opened":"2024","lat":40.7590,"lng":-73.8360,"status":"verified","source":"https://chainstoreage.com/first-look-pop-mart-opens-first-queens-store"},
+{"name":"POP MART Staten Island Mall","country":"United States","city":"Staten Island","address":"Staten Island Mall, 2655 Richmond Ave, NY","type":"standard","opened":"2024","lat":40.5820,"lng":-74.1660,"status":"verified","source":"https://chainstoreage.com/first-look-pop-mart-opens-first-queens-store"},
+{"name":"POP MART American Dream","country":"United States","city":"East Rutherford","address":"American Dream, 1 American Dream Way, NJ","type":"standard","opened":"2023-09","lat":40.8090,"lng":-74.0700,"status":"verified","note":"First permanent US store.","source":"https://chainstoreage.com/first-look-pop-mart-open-its-first-us-store"},
+{"name":"POP MART Westfield Century City","country":"United States","city":"Los Angeles","address":"10250 Santa Monica Blvd, Los Angeles, CA 90067","type":"flagship","opened":"2024-02-10","lat":34.0580,"lng":-118.4185,"status":"verified","note":"Opened as Pop Mart's largest US flagship at the time.","source":"https://www.popmart.com/us/news/9"},
+{"name":"POP MART Glendale Galleria","country":"United States","city":"Glendale","address":"100 W Broadway Suite 100, Glendale, CA 91210","type":"standard","opened":"2024-03-16","lat":34.1460,"lng":-118.2560,"status":"verified","source":"https://www.popmart.com/ca/news/10"},
+{"name":"POP MART South Coast Plaza","country":"United States","city":"Costa Mesa","address":"South Coast Plaza, 3333 Bristol St, CA","type":"standard","opened":"2022-06","lat":33.6905,"lng":-117.8890,"status":"verified","note":"Began as Pop Mart's first US pop-up.","source":"https://chainstoreage.com/first-look-pop-mart-bets-las-vegas"},
+{"name":"POP MART Westfield Valley Fair","country":"United States","city":"Santa Clara","address":"Westfield Valley Fair, 2855 Stevens Creek Blvd, CA","type":"standard","opened":"2023","lat":37.3255,"lng":-121.9455,"status":"verified","source":"https://chainstoreage.com/pop-mart-grows-us-footprint-santa-clara-location"},
+{"name":"POP MART Westfield Galleria at Roseville","country":"United States","city":"Roseville","address":"1151 Galleria Blvd, Space 2060, Roseville, CA 95678","type":"standard","opened":"","lat":38.7736,"lng":-121.2700,"status":"unverified","note":"Listed only by a third-party directory.","source":"https://popmartnearme.com/us/"},
+{"name":"POP MART Bellevue Square","country":"United States","city":"Bellevue","address":"Bellevue Square, 575 Bellevue Square, WA","type":"standard","opened":"2024","lat":47.6158,"lng":-122.2040,"status":"verified","source":"https://chainstoreage.com/first-look-pop-mart-bets-las-vegas"},
+{"name":"POP MART Fashion Show Las Vegas","country":"United States","city":"Las Vegas","address":"Fashion Show, 3200 Las Vegas Blvd S, NV","type":"standard","opened":"2024","lat":36.1275,"lng":-115.1710,"status":"verified","source":"https://chainstoreage.com/first-look-pop-mart-bets-las-vegas"},
+{"name":"POP MART Stonebriar Centre","country":"United States","city":"Frisco","address":"Stonebriar Centre, 2601 Preston Rd, TX","type":"standard","opened":"2024","lat":33.0985,"lng":-96.8115,"status":"verified","note":"First store in Texas.","source":"https://chainstoreage.com/first-look-pop-mart-opens-first-texas-store-two-more-way"},
+{"name":"POP MART Fashion Outlets of Chicago","country":"United States","city":"Rosemont","address":"Fashion Outlets of Chicago, 5220 Fashion Outlets Way, IL","type":"standard","opened":"2024","lat":41.9775,"lng":-87.8650,"status":"verified","source":"https://chainstoreage.com/pop-mart-opens-new-chicago-store-plans-double-us-store-count"},
+{"name":"POP MART The Forum Shops at Caesars","country":"United States","city":"Las Vegas","address":"The Forum Shops at Caesars Palace, NV","type":"standard","opened":"2026 (planned)","lat":36.1185,"lng":-115.1760,"status":"unverified","note":"In Simon's 2026 opening list; opening not confirmed.","source":"https://chainstoreage.com/pop-mart-plots-2026-growth-heres-where"},
+{"name":"POP MART King of Prussia","country":"United States","city":"King of Prussia","address":"King of Prussia mall, PA","type":"standard","opened":"2026 (planned)","lat":40.0880,"lng":-75.3930,"status":"unverified","note":"In Simon's 2026 opening list; opening not confirmed.","source":"https://chainstoreage.com/pop-mart-plots-2026-growth-heres-where"},
+{"name":"POP MART Dolphin Mall","country":"United States","city":"Sweetwater","address":"Dolphin Mall, 11401 NW 12th St, FL","type":"standard","opened":"2026 (planned)","lat":25.7880,"lng":-80.3810,"status":"unverified","note":"In Simon's 2026 opening list; opening not confirmed.","source":"https://chainstoreage.com/pop-mart-plots-2026-growth-heres-where"},
+{"name":"POP MART Brea Mall","country":"United States","city":"Brea","address":"Brea Mall, 1065 Brea Mall, CA","type":"standard","opened":"2026 (planned)","lat":33.9160,"lng":-117.8850,"status":"unverified","note":"In Simon's 2026 opening list; opening not confirmed.","source":"https://chainstoreage.com/pop-mart-plots-2026-growth-heres-where"},
+{"name":"POP MART Del Amo Fashion Center","country":"United States","city":"Torrance","address":"Del Amo Fashion Center, CA","type":"standard","opened":"2026 (planned)","lat":33.8315,"lng":-118.3500,"status":"unverified","note":"In Simon's 2026 opening list; opening not confirmed.","source":"https://chainstoreage.com/pop-mart-plots-2026-growth-heres-where"},
+{"name":"POP MART City Creek Center","country":"United States","city":"Salt Lake City","address":"City Creek Center, UT","type":"standard","opened":"2026 (planned)","lat":40.7695,"lng":-111.8935,"status":"unverified","note":"In Simon's 2026 opening list; opening not confirmed.","source":"https://chainstoreage.com/pop-mart-plots-2026-growth-heres-where"},
+{"name":"POP MART Tacoma Mall","country":"United States","city":"Tacoma","address":"Tacoma Mall, 4502 S Steele St, WA","type":"standard","opened":"2026 (planned)","lat":47.2155,"lng":-122.4675,"status":"unverified","note":"Mall said July opening; not confirmed.","source":"https://www.yahoo.com/news/korean-street-food-swanky-sac-121500401.html"},
+{"name":"POP MART CF Richmond Centre","country":"Canada","city":"Richmond","address":"6551 No. 3 Rd, Space 1598B, Richmond, BC","type":"standard","opened":"2025-12","lat":49.1665,"lng":-123.1370,"status":"verified","note":"First store in Canada.","source":"https://curiocity.com/pop-mart-vancouver/"},
+{"name":"POP MART CF Toronto Eaton Centre","country":"Canada","city":"Toronto","address":"Level 1, CF Toronto Eaton Centre, 220 Yonge St","type":"popup","opened":"2026-07-03","lat":43.6545,"lng":-79.3807,"status":"verified","note":"Opened as a pop-up; a larger permanent Level 1 store is planned.","source":"https://retail-insider.com/retail-insider/2026/07/pop-mart-plans-major-canadian-expansion-after-strong-early-demand/"},
+{"name":"POP MART Toronto Premium Outlets","country":"Canada","city":"Halton Hills","address":"Toronto Premium Outlets, 13850 Steeles Ave W, ON","type":"standard","opened":"","lat":43.6105,"lng":-79.8590,"status":"verified","source":"https://retail-insider.com/retail-insider/2026/07/pop-mart-plans-major-canadian-expansion-after-strong-early-demand/"},
+{"name":"POP MART Metropolis at Metrotown","country":"Canada","city":"Burnaby","address":"Metropolis at Metrotown, 4700 Kingsway, BC","type":"standard","opened":"2025-12","lat":49.2265,"lng":-122.9990,"status":"unverified","note":"Scheduled to open days after Richmond; opening not independently confirmed.","source":"https://retail-insider.com/retail-insider/2025/12/pop-mart-sees-canada-as-natural-next-step-for-expansion-interview/"},
+{"name":"POP MART CF Sherway Gardens","country":"Canada","city":"Toronto","address":"CF Sherway Gardens, 25 The West Mall, Etobicoke","type":"standard","opened":"2026 (planned)","lat":43.6115,"lng":-79.5575,"status":"unverified","note":"Hoarding reported June 2026; opening not confirmed.","source":"https://www.insauga.com/one-of-the-most-popular-stores-in-japan-is-opening-in-toronto/"},
+{"name":"POP MART at El Palacio de Hierro","country":"Mexico","city":"Mexico City","address":"El Palacio de Hierro (branch not confirmed)","type":"standard","opened":"2025-11","lat":19.4335,"lng":-99.1955,"status":"unverified","note":"First Mexican shop-in-shop reported; branch not confirmed. Pin is Polanco.","source":"https://americaretail-malls.com/paises/mexico/la-primera-tienda-pop-mart-abre-sus-puertas-en-palacio-de-hierro/"},
+{"name":"POP MART Hamad International Airport","country":"Qatar","city":"Doha","address":"Qatar Duty Free, Hamad International Airport","type":"standard","opened":"2025-10-28","lat":25.2610,"lng":51.6140,"status":"verified","note":"First Middle East store and the first Pop Mart open 24/7.","source":"https://jingdaily.com/intels/2025-11/03/pop-mart-opens-first-middle-east-store-in-qatar"},
+{"name":"POP MART Abu Dhabi debut","country":"United Arab Emirates","city":"Abu Dhabi","address":"Abu Dhabi (venue and format not confirmed)","type":"popup","opened":"2025-05","lat":24.4539,"lng":54.3773,"status":"unverified","note":"A May 2025 Abu Dhabi debut was mentioned, with no venue or format given. Pin is city centre.","source":"https://insideretail.asia/2025/10/31/qatar-duty-free-launches-the-emirates-first-pop-mart-store/"},
+{"name":"POP MART London Flagship (Oxford Street)","country":"United Kingdom","city":"London","address":"149-151 Oxford Street, W1","type":"flagship","opened":"2026-10-23","lat":51.5155,"lng":-0.1365,"status":"verified","source":"https://lexpress-franchise.com/en/news/pop-mart-opens-oxford-street-flagship-on-23-october/"},
+{"name":"POP MART Charing Cross Road","country":"United Kingdom","city":"London","address":"69-71 Charing Cross Road, WC2H 0NE","type":"standard","opened":"2026-04","lat":51.5125,"lng":-0.1295,"status":"verified","note":"5,090 sq ft with a mezzanine; was the largest London store until Oxford Street opened.","source":"https://retailtechinnovationhub.com/home/2026/4/16/chinese-firm-pop-mart-takes-wraps-off-its-largest-london-store-yet-on-charing-cross-road"},
+{"name":"POP MART 262 Oxford Street","country":"United Kingdom","city":"London","address":"262 Oxford Street, W1","type":"standard","opened":"","lat":51.5153,"lng":-0.1430,"status":"verified","source":"https://www.retailgazette.co.uk/blog/2026/10/labubu-mania-hits-oxford-street-as-pop-mart-gears-up-for-major-flagship-opening/"},
+{"name":"POP MART Soho (Shaftesbury Avenue)","country":"United Kingdom","city":"London","address":"Shaftesbury Avenue, Soho","type":"standard","opened":"2022-01","lat":51.5115,"lng":-0.1310,"status":"verified","note":"First store in Europe.","source":"https://retailtechinnovationhub.com/home/2026/4/16/chinese-firm-pop-mart-takes-wraps-off-its-largest-london-store-yet-on-charing-cross-road"},
+{"name":"POP MART Westfield London","country":"United Kingdom","city":"London","address":"Westfield London, Shepherd's Bush","type":"standard","opened":"","lat":51.5072,"lng":-0.2210,"status":"verified","source":"https://westfield.com/united-kingdom/london/retailers-detail/pop-mart/79463"},
+{"name":"POP MART Westfield Stratford City","country":"United Kingdom","city":"London","address":"Westfield Stratford City, E20","type":"standard","opened":"","lat":51.5430,"lng":-0.0065,"status":"verified","source":"https://toybook.com/?p=613842"},
+{"name":"POP MART at Harrods","country":"United Kingdom","city":"London","address":"Harrods, 87-135 Brompton Road, Knightsbridge","type":"standard","opened":"","lat":51.4994,"lng":-0.1633,"status":"verified","note":"Dedicated space inside the department store.","source":"https://retailtechinnovationhub.com/home/2026/4/16/chinese-firm-pop-mart-takes-wraps-off-its-largest-london-store-yet-on-charing-cross-road"},
+{"name":"POP MART at Hamleys","country":"United Kingdom","city":"London","address":"Hamleys, 188-196 Regent Street","type":"standard","opened":"","lat":51.5127,"lng":-0.1400,"status":"verified","note":"Dedicated space inside the toy store.","source":"https://retailtechinnovationhub.com/home/2026/4/16/chinese-firm-pop-mart-takes-wraps-off-its-largest-london-store-yet-on-charing-cross-road"},
+{"name":"POP MART St David's Cardiff","country":"United Kingdom","city":"Cardiff","address":"Upper level, Grand Arcade, St David's, CF10 2EF","type":"standard","opened":"2026-06-19","lat":51.4790,"lng":-3.1745,"status":"verified","note":"First store in Wales; 17th UK store.","source":"https://nation.cymru/culture/inside-global-sensation-retailers-first-store-in-wales/"},
+{"name":"POP MART Birmingham","country":"United Kingdom","city":"Birmingham","address":"Birmingham (exact location not confirmed)","type":"standard","opened":"","lat":52.4775,"lng":-1.8935,"status":"unverified","note":"Named in the 2026 UK expansion plan. Pin is city centre.","source":"https://www.scmp.com/business/china-business/article/3341948/labubu-toymaker-pop-mart-picks-london-european-headquarters-rolls-out-new-stores"},
+{"name":"POP MART Manchester","country":"United Kingdom","city":"Manchester","address":"Manchester (exact location not confirmed)","type":"standard","opened":"","lat":53.4835,"lng":-2.2400,"status":"unverified","note":"Named as an existing UK location; address not confirmed. Pin is city centre.","source":"https://www.wales247.co.uk/?p=206272"},
+{"name":"POP MART Cambridge","country":"United Kingdom","city":"Cambridge","address":"Cambridge (exact location not confirmed)","type":"standard","opened":"","lat":52.2045,"lng":0.1218,"status":"unverified","note":"Store pictured by China Daily; address not confirmed. Pin is city centre.","source":"https://investinchina.chinaservicesinfo.com/s/202602/03/WS6981bb08498e23165e06d3b5/london-to-be-pop-marts-europe-hq.html"},
+{"name":"POP MART Leeds","country":"United Kingdom","city":"Leeds","address":"Leeds (exact location not confirmed)","type":"standard","opened":"2026-01","lat":53.7960,"lng":-1.5440,"status":"unverified","note":"Opening reported for late January 2026; address not confirmed. Pin is city centre.","source":"https://www.wales247.co.uk/?p=206272"},
+{"name":"POP MART Paris Haussmann Flagship","country":"France","city":"Paris","address":"51-53 boulevard Haussmann, 75009","type":"flagship","opened":"2026-09","lat":48.8735,"lng":2.3315,"status":"verified","note":"800 m² over three levels, opposite Galeries Lafayette; largest in France.","source":"https://www.paris-friendly.fr/pop-mart-flagship-boulevard-haussmann-paris.html"},
+{"name":"POP MART Carrousel du Louvre","country":"France","city":"Paris","address":"Carrousel du Louvre, 99 rue de Rivoli","type":"standard","opened":"2024-07-27","lat":48.8615,"lng":2.3330,"status":"verified","source":"https://en.ccpit.org/infoById/d6e76523d0d811f0bdf90242ac1a0702/4"},
+{"name":"POP MART Westfield Forum des Halles","country":"France","city":"Paris","address":"Westfield Forum des Halles, 75001","type":"standard","opened":"2023-02-25","lat":48.8625,"lng":2.3460,"status":"verified","note":"First permanent store in continental Europe.","source":"https://insideretail.asia/2023/02/27/pop-mart-expands-into-france/"},
+{"name":"POP MART La Défense","country":"France","city":"Puteaux","address":"La Défense business district","type":"standard","opened":"2025","lat":48.8915,"lng":2.2385,"status":"verified","source":"https://www.scmp.com/economy/china-economy/article/3310651/how-europe-went-crazy-chinese-blind-box-toys-and-why-it-matters"},
+{"name":"POP MART Champs-Élysées","country":"France","city":"Paris","address":"Avenue des Champs-Élysées","type":"flagship","opened":"2024-06","lat":48.8700,"lng":2.3070,"status":"unverified","note":"Reported by Xinhua; other sources don't list it. Exact address not confirmed.","source":"https://en.ccpit.org/infoById/d6e76523d0d811f0bdf90242ac1a0702/4"},
+{"name":"POP MART Opéra","country":"France","city":"Paris","address":"Opéra district, 75009 (exact address not confirmed)","type":"standard","opened":"","lat":48.8710,"lng":2.3320,"status":"unverified","note":"Listed in 2024; not confirmed since.","source":"https://prnewswire.com/news-releases/pop-mart-unveiling-an-innovative-retail-experience-at-the-louvre-302209847.html"},
+{"name":"POP MART Pompidou","country":"France","city":"Paris","address":"Beaubourg / Pompidou area, 75004 (exact address not confirmed)","type":"standard","opened":"","lat":48.8607,"lng":2.3522,"status":"unverified","note":"Listed in 2024; not confirmed since.","source":"https://prnewswire.com/news-releases/pop-mart-unveiling-an-innovative-retail-experience-at-the-louvre-302209847.html"},
+{"name":"POP MART Westfield La Part-Dieu","country":"France","city":"Lyon","address":"Westfield La Part-Dieu, 17 rue du Docteur Bouchut","type":"standard","opened":"2025-09-26","lat":45.7610,"lng":4.8555,"status":"verified","source":"https://www.lsa-conso.fr/labubu-et-apres-comment-le-chinois-pop-mart-prepare-son-avenir-en-france-et-ailleurs,462671"},
+{"name":"POP MART Bordeaux","country":"France","city":"Bordeaux","address":"8 rue Sainte-Catherine","type":"standard","opened":"2025-09","lat":44.8410,"lng":-0.5735,"status":"verified","source":"https://mulderville.net/en/events/2901/pop-mart-opens-its-first-bordeaux-store-blending-art-wine-and-collectibles"},
+{"name":"POP MART Marseille","country":"France","city":"Marseille","address":"Marseille (exact location not confirmed)","type":"standard","opened":"","lat":43.2965,"lng":5.3698,"status":"unverified","note":"Named as an existing French store; address not confirmed. Pin is city centre.","source":"https://www.paris-friendly.fr/pop-mart-flagship-boulevard-haussmann-paris.html"},
+{"name":"POP MART Lille","country":"France","city":"Lille","address":"Lille (exact location not confirmed)","type":"standard","opened":"","lat":50.6365,"lng":3.0635,"status":"unverified","note":"Named as an existing French store; address not confirmed. Pin is city centre.","source":"https://www.paris-friendly.fr/pop-mart-flagship-boulevard-haussmann-paris.html"},
+{"name":"POP MART Passeig de Gràcia Flagship","country":"Spain","city":"Barcelona","address":"Passeig de Gràcia","type":"flagship","opened":"2026-04","lat":41.3925,"lng":2.1650,"status":"verified","source":"https://www.interempresas.net/Licencias/664588-Entrevista-a-Marco-Ardizzone-head-of-Retail-South-Europe-de-POP-Mart.html"},
+{"name":"POP MART Portal de l'Àngel","country":"Spain","city":"Barcelona","address":"Portal de l'Àngel 3","type":"standard","opened":"2025-07","lat":41.3860,"lng":2.1735,"status":"verified","note":"First permanent store in Spain (124 m²).","source":"https://www.timeout.es/barcelona/es/noticias/los-labubus-llegan-a-barcelona-abre-la-primera-tienda-de-pop-mart-en-la-ciudad-con-mas-de-120-m-y-cientos-de-articulos-originales-080725"},
+{"name":"POP MART El Dau (Diagonal)","country":"Spain","city":"Barcelona","address":"El Dau building (former Pedralbes Centre), Avinguda Diagonal","type":"standard","opened":"2026-03-11","lat":41.3880,"lng":2.1290,"status":"verified","source":"https://diaricatalunya.cat/en/barcelones/general/pop-mart-opens-its-largest-barcelona-store-on-diagonal-avenue"},
+{"name":"POP MART Gran Vía","country":"Spain","city":"Madrid","address":"Gran Vía 44","type":"standard","opened":"2025-12","lat":40.4200,"lng":-3.7040,"status":"verified","note":"First store in Madrid.","source":"https://www.elobservador.com.uy/espana/economia-y-finanzas/barcelona-pop-mart-la-empresa-los-labubus-abrira-su-segundo-punto-venta-el-antiguo-pedralbes-centre-n6026684"},
+{"name":"POP MART Westfield Parquesur","country":"Spain","city":"Leganés","address":"Westfield Parquesur, Leganés (Madrid)","type":"standard","opened":"","lat":40.3400,"lng":-3.7470,"status":"unverified","note":"Announced for later. Spain now has two Madrid stores, but this one isn't confirmed by name.","source":"https://www.elobservador.com.uy/espana/economia-y-finanzas/barcelona-pop-mart-la-empresa-los-labubus-abrira-su-segundo-punto-venta-el-antiguo-pedralbes-centre-n6026684"},
+{"name":"POP MART ALEXA Berlin","country":"Germany","city":"Berlin","address":"ALEXA, Grunerstraße 20, Alexanderplatz","type":"flagship","opened":"2025-07-25","lat":52.5195,"lng":13.4150,"status":"verified","note":"First store in Germany; expanded into the largest Pop Mart in continental Europe.","source":"https://www.across-magazine.com/pop-mart-expands-store-in-alexa-berlin/"},
+{"name":"POP MART Corso Buenos Aires","country":"Italy","city":"Milan","address":"Corso Buenos Aires","type":"standard","opened":"2024-07","lat":45.4800,"lng":9.2105,"status":"verified","note":"First store in Italy.","source":"https://www.italiaoggi.it/marketing-e-media/marketing/pop-mart-il-brand-oltre-i-giochi-d1mo35rj"},
+{"name":"POP MART Via Dante","country":"Italy","city":"Milan","address":"Via Dante 6","type":"standard","opened":"2025-09-27","lat":45.4670,"lng":9.1855,"status":"verified","source":"https://www.italiaoggi.it/marketing-e-media/marketing/pop-mart-fa-il-bis-a-milano-in-via-dante-in-attesa-del-grande-flagship-in-san-babila-csemve7v"},
+{"name":"POP MART San Babila Flagship","country":"Italy","city":"Milan","address":"Corso Vittorio Emanuele II, near Piazza San Babila","type":"flagship","opened":"","lat":45.4655,"lng":9.1975,"status":"unverified","note":"Reported as under construction; opening not confirmed.","source":"https://www.italiaoggi.it/marketing-e-media/marketing/pop-mart-fa-il-bis-a-milano-in-via-dante-in-attesa-del-grande-flagship-in-san-babila-csemve7v"},
+{"name":"POP MART Via del Corso","country":"Italy","city":"Rome","address":"Via del Corso 511","type":"standard","opened":"2025-11-27","lat":41.9095,"lng":12.4775,"status":"verified","source":"https://secretroma.com/en/pop-mart-opening-in-rome/"},
+{"name":"POP MART Porta di Roma","country":"Italy","city":"Rome","address":"Centro commerciale Porta di Roma","type":"standard","opened":"","lat":41.9715,"lng":12.5390,"status":"verified","source":"https://www.italiaoggi.it/marketing-e-media/marketing/pop-mart-il-brand-oltre-i-giochi-d1mo35rj"},
+{"name":"POP MART Kalverstraat","country":"Netherlands","city":"Amsterdam","address":"Kalverstraat","type":"standard","opened":"2024-07-13","lat":52.3700,"lng":4.8915,"status":"verified","note":"First permanent store in the Netherlands.","source":"https://retail-insight-network.com/?p=93054"}
+]
+}
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/topojson-client@3/dist/topojson-client.min.js"></script>
+<script>
+{
+const DATA = JSON.parse(document.getElementById('store-data').textContent);
+function monthOf(o){ if (!o || /planned/i.test(o)) return null; const m = /^(\d{4})(?:-(\d{2}))?/.exec(o); return m ? +m[1]*12 + (m[2] ? +m[2]-1 : 0) : null; }
+const STORES = DATA.stores.map((s, i) => ({...s, id: i, _m: monthOf(s.opened)}));
+const REGION = {"China":"Greater China","Hong Kong SAR":"Greater China","Macau SAR":"Greater China","Taiwan":"Greater China","Japan":"East Asia","South Korea":"East Asia","Singapore":"Southeast Asia","Malaysia":"Southeast Asia","Thailand":"Southeast Asia","Indonesia":"Southeast Asia","Philippines":"Southeast Asia","Vietnam":"Southeast Asia","Australia":"Oceania","New Zealand":"Oceania","United States":"North America","Canada":"North America","Mexico":"North America","Qatar":"Middle East","United Arab Emirates":"Middle East","United Kingdom":"Europe","France":"Europe","Spain":"Europe","Germany":"Europe","Italy":"Europe","Netherlands":"Europe"};
+const TYPE_LABEL = {flagship:'Flagship', standard:'Store', popup:'Pop-up'};
+const COLORS = {flagship:'#ff4f8b', standard:'#2b9cf2', popup:'#ff9a1f'};
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const state = {q:'', country:'', types:new Set(['flagship','standard','popup']), unverified:true, me:null, until:null};
+let toastTimer;
+function toast(msg, ms = 4200){ const t = $('toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), ms); }
+function fmtDate(o){
+  if (!o) return 'Not published';
+  const m = /^(\d{4})-(\d{2})(?:-(\d{2}))?$/.exec(o);
+  if (!m) return o;
+  const d = new Date(Date.UTC(+m[1], +m[2]-1, m[3] ? +m[3] : 1));
+  return d.toLocaleDateString('en-GB', m[3] ? {day:'numeric',month:'short',year:'numeric',timeZone:'UTC'} : {month:'short',year:'numeric',timeZone:'UTC'});
+}
+function km(a, b){ const R = 6371, r = x => x*Math.PI/180; const dLat = r(b.lat-a.lat), dLng = r(b.lng-a.lng); const h = Math.sin(dLat/2)**2 + Math.cos(r(a.lat))*Math.cos(r(b.lat))*Math.sin(dLng/2)**2; return 2*R*Math.asin(Math.sqrt(h)); }
+function fmtKm(d){ return d < 1 ? Math.round(d*1000)+' m' : d < 100 ? d.toFixed(1)+' km' : Math.round(d).toLocaleString('en-GB')+' km'; }
+
+/* footer: date, coverage, sources */
+$('updated').textContent = fmtDate(DATA.updated);
+const nVer = STORES.filter(s => s.status === 'verified').length;
+$('cover').textContent = `${STORES.length} stores listed (${nVer} verified). That's about ${Math.round(STORES.length/DATA.globalTotal.stores*100)}% of the ${DATA.globalTotal.stores} stores Pop Mart reported on ${DATA.globalTotal.asOf}. Most of the gap is in mainland China.`;
+const srcs = [DATA.globalTotal.source, ...new Set(STORES.map(s => s.source))];
+$('sources').innerHTML = [...new Set(srcs)].map(u => { let h = u; try { h = new URL(u).hostname.replace(/^www\./,''); } catch(e){} return `<li><a href="${esc(u)}" target="_blank" rel="noopener">${esc(h)}</a></li>`; }).join('');
+
+/* country select */
+const byRegion = {};
+STORES.forEach(s => { const r = REGION[s.country] || 'Other'; (byRegion[r] ||= new Set()).add(s.country); });
+$('country').insertAdjacentHTML('beforeend', Object.keys(byRegion).sort().map(r => `<optgroup label="${esc(r)}"><option value="region:${esc(r)}">All of ${esc(r)}</option>${[...byRegion[r]].sort().map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join('')}</optgroup>`).join(''));
+
+/* globe */
+const hasD3 = typeof d3 !== 'undefined' && typeof topojson !== 'undefined';
+let globe = null;
+if (!hasD3) {
+  $('map').innerHTML = '<p class="empty" style="padding-top:30vh">The globe library couldn\'t load (are you offline?). The store list still works.</p>';
+} else {
+  globe = (() => {
+    const el = $('map');
+    const svg = d3.select(el).append('svg');
+    const proj = d3.geoOrthographic().clipAngle(90).precision(.4);
+    const path = d3.geoPath(proj);
+    const gHalo = svg.append('circle').attr('class','halo');
+    const gOcean = svg.append('path').attr('class','ocean');
+    const gGrat = svg.append('path').attr('class','grat');
+    const gLand = svg.append('g');
+    const gDots = svg.append('g');
+    const gMe = svg.append('circle').attr('class','dot-me').attr('r',9).style('display','none');
+    const grat = d3.geoGraticule10();
+    const HOME = [-60, -25];
+    const ORDER = ['flagship','standard','popup'];
+    const CLUSTER_PX = 30, NO_CLUSTER_K = 40;
+    let rot = [...HOME], k = 1, W = 0, H = 0, base = 1;
+    let countries = null, lo = null, hi = null, hiAsked = false;
+    let shown = [], mode = 'capsules', fresh = new Set();
+    let pop = null;   // {lng, lat, store?} anchor of the open popup
+    let spinning = !matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const center = () => [-rot[0], -rot[1]];
+    const visibleLL = (lng, lat) => d3.geoDistance([lng, lat], center()) < Math.PI/2 - 0.005;
+    const tally = list => { const c = {flagship:0, standard:0, popup:0}; list.forEach(s => c[s.type]++); return c; };
+
+    function size(){ W = el.clientWidth; H = el.clientHeight; base = Math.min(W, H) * 0.42; svg.attr('viewBox', `0 0 ${W} ${H}`); draw(); }
+
+    /* group visible stores into screen-space clusters (capsule mode) */
+    function clusters(pts){
+      if (k >= NO_CLUSTER_K) return pts.map(p => ({...p, members:[p.s]}));
+      const used = new Array(pts.length).fill(false), out = [];
+      const idx = pts.map((p, i) => i).sort((a, b) => ORDER.indexOf(pts[a].s.type) - ORDER.indexOf(pts[b].s.type));
+      for (const i of idx) {
+        if (used[i]) continue;
+        used[i] = true; const m = [pts[i]];
+        for (let j = 0; j < pts.length; j++) if (!used[j] && Math.hypot(pts[j].x - pts[i].x, pts[j].y - pts[i].y) < CLUSTER_PX) { used[j] = true; m.push(pts[j]); }
+        out.push({x: d3.mean(m, p => p.x), y: d3.mean(m, p => p.y), s: m.length === 1 ? m[0].s : null, members: m.map(p => p.s)});
+      }
+      return out;
+    }
+    const arc = d3.arc();
+    function clusterSvg(c){
+      const n = c.members.length, cnt = tally(c.members), r = n < 10 ? 17 : n < 40 ? 21 : 25;
+      let a = 0, slices = '';
+      ORDER.forEach(t => { if (!cnt[t]) return; const a1 = a + cnt[t]/n*2*Math.PI; slices += `<path d="${arc({innerRadius:0, outerRadius:r, startAngle:a, endAngle:a1})}" fill="${COLORS[t]}"/>`; a = a1; });
+      return `<circle r="${r+3}" fill="#fff"/>${slices}<rect x="-13" y="-9" width="26" height="18" rx="9" fill="#fff"/><text dy="5" text-anchor="middle">${n}</text>`;
+    }
+    function draw(){
+      const R = base * k;
+      proj.scale(R).translate([W/2, H/2]).rotate(rot);
+      gHalo.attr('cx', W/2).attr('cy', H/2).attr('r', R + 4);
+      gOcean.attr('d', path({type:'Sphere'}));
+      gGrat.attr('d', path(grat));
+      if (k > 2.2 && !hiAsked) loadHi();
+      const src = (k > 2.2 && hi) ? hi : lo;
+      if (src !== countries) { countries = src; gLand.selectAll('path').data(src ? src.features : []).join('path').attr('class','land'); }
+      gLand.selectAll('path').attr('d', path);
+      if (mode === 'bars') drawBars(); else drawCapsules();
+      if (state.me && visibleLL(state.me.lng, state.me.lat)) { const [x, y] = proj([state.me.lng, state.me.lat]); gMe.style('display', null).attr('cx', x).attr('cy', y); }
+      else gMe.style('display','none');
+      placePop();
+    }
+    function drawCapsules(){
+      const pts = shown.filter(s => visibleLL(s.lng, s.lat)).map(s => { const [x, y] = proj([s.lng, s.lat]); return {s, x, y}; });
+      const r = Math.min(13, 5 + Math.log2(Math.max(1, k)) * 1.6);
+      const items = clusters(pts);
+      gDots.selectAll('g.item').data(items, d => d.s ? 's' + d.s.id : 'c' + d.members.map(m => m.id).sort((a,b) => a-b).join('-'))
+        .join(enter => enter.append('g').attr('class','item').attr('tabindex', 0).attr('role','button')
+          .on('click', (e, d) => { e.stopPropagation(); clickItem(d); })
+          .on('keydown', (e, d) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); clickItem(d); } })
+          .each(function(d){
+            const g = d3.select(this);
+            if (d.s) g.attr('aria-label', d.s.name).append('circle')
+              .attr('class', 'dot-store' + (d.s.status === 'unverified' ? ' unv' : ''))
+              .attr('fill', COLORS[d.s.type]).attr('stroke', d.s.status === 'unverified' ? COLORS[d.s.type] : null);
+            else g.attr('class','item gumball').attr('aria-label', `${d.members.length} stores here. Zoom in.`).html(clusterSvg(d));
+          }))
+        .attr('transform', d => `translate(${d.x},${d.y})`)
+        .each(function(d){
+          if (!d.s) return;
+          const c = d3.select(this).select('circle');
+          c.attr('r', d.s.type === 'flagship' ? r + 1.5 : r).classed('sel', !!(pop && pop.store && pop.store.id === d.s.id)).classed('fresh', fresh.has(d.s.id));
+        })
+        .sort((a, b) => (a.s ? ORDER.length - ORDER.indexOf(a.s.type) : 9) - (b.s ? ORDER.length - ORDER.indexOf(b.s.type) : 9));
+    }
+    /* bars: one stacked column per city, rising "up" from the city's spot */
+    function cityGroups(){
+      return d3.groups(shown, s => s.country + '|' + s.city).map(([key, ms]) => ({key, members:ms, city:ms[0].city, country:ms[0].country, lng:d3.mean(ms, s => s.lng), lat:d3.mean(ms, s => s.lat)}));
+    }
+    function drawBars(){
+      const groups = cityGroups(), max = d3.max(groups, g => g.members.length) || 1;
+      const vis = groups.filter(g => visibleLL(g.lng, g.lat)).map(g => { const [x, y] = proj([g.lng, g.lat]); return {...g, x, y}; }).sort((a, b) => a.y - b.y);
+      const bw = 12;
+      gDots.selectAll('g.item').data(vis, d => 'b' + d.key)
+        .join(enter => enter.append('g').attr('class','item colbar').attr('tabindex', 0).attr('role','button')
+          .on('click', (e, d) => { e.stopPropagation(); openList(d); })
+          .on('keydown', (e, d) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openList(d); } }))
+        .attr('aria-label', d => `${d.city}: ${d.members.length} stores`)
+        .attr('transform', d => `translate(${d.x},${d.y})`)
+        .each(function(d){
+          const n = d.members.length, h = 6 + 104 * n / max, cnt = tally(d.members), sig = n + ':' + h.toFixed(1) + ':' + ORDER.map(t => cnt[t]).join(',');
+          if (this.__sig === sig) return; this.__sig = sig;
+          let y = 0, segs = '';
+          ORDER.forEach(t => { if (!cnt[t]) return; const sh = h * cnt[t] / n; y -= sh; segs += `<rect x="${-bw/2}" y="${y}" width="${bw}" height="${sh}" fill="${COLORS[t]}"/>`; });
+          d3.select(this).html(`<ellipse class="shadow" rx="${bw*0.9}" ry="${bw*0.35}"/>${segs}<ellipse rx="${bw/2}" ry="${bw*0.25}" cy="${-h}" fill="#fff" opacity=".85"/><rect class="shine" x="${-bw/2+2}" y="${-h+2}" width="3" height="${Math.max(0, h-4)}"/>${n > 1 || max < 3 ? `<text y="${-h-8}" text-anchor="middle">${n}</text>` : ''}`);
+        });
+    }
+    function clickItem(d){
+      if (d.s) return openPop(d.s);
+      const pts = d.members.map(s => [s.lng, s.lat]);
+      const target = fitK(pts);
+      if (target <= k * 1.3 || target >= 150) openList({city: commonCity(d.members), members: d.members, lng: d3.mean(d.members, s => s.lng), lat: d3.mean(d.members, s => s.lat)});
+      else fitPoints(pts);
+    }
+    const commonCity = ms => new Set(ms.map(s => s.city)).size === 1 ? `${ms[0].city}, ${ms[0].country}` : new Set(ms.map(s => s.country)).size === 1 ? ms[0].country : 'Stores here';
+
+    function loadHi(){ hiAsked = true; d3.json('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-50m.json').then(t => { hi = topojson.feature(t, t.objects.countries); draw(); }).catch(() => {}); }
+    d3.json('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json')
+      .then(t => { lo = topojson.feature(t, t.objects.countries); draw(); })
+      .catch(() => toast('Couldn\'t load country outlines. Store capsules still work.'));
+
+    function setStores(list, freshIds){
+      shown = list; fresh = freshIds || new Set();
+      if (pop && pop.store && !list.some(s => s.id === pop.store.id)) closePop();
+      draw();
+    }
+    function setMode(m){ mode = m; gDots.selectAll('*').remove(); closePop(); draw(); }
+
+    /* popup */
+    function showPop(anchor, html){ pop = anchor; $('gpopBody').innerHTML = html; $('gpop').hidden = false; stopSpin(); draw(); }
+    function openPop(s){ showPop({lng:s.lng, lat:s.lat, store:s}, popupHtml(s)); }
+    function openList(g){
+      const ms = [...g.members].sort((a, b) => ORDER.indexOf(a.type) - ORDER.indexOf(b.type) || a.name.localeCompare(b.name));
+      const cnt = tally(ms);
+      const title = g.country ? `${g.city}, ${g.country}` : g.city;
+      showPop({lng:g.lng, lat:g.lat}, `<div class="pp"><span class="pp-type" style="--c:var(--ink)">${ms.length} store${ms.length > 1 ? 's' : ''}</span>
+        <h3>${esc(title)}</h3><p class="mix">${ORDER.filter(t => cnt[t]).map(t => `<span><i style="background:${COLORS[t]}"></i>${cnt[t]} ${TYPE_LABEL[t].toLowerCase()}${cnt[t] > 1 ? 's' : ''}</span>`).join('')}</p>
+        <ul class="plist">${ms.map(s => `<li><button data-id="${s.id}"><i style="background:${COLORS[s.type]}"></i>${esc(s.name.replace(/^POP MART (?!at )/,''))}${s.status === 'unverified' ? ' <small>(unverified)</small>' : ''}</button></li>`).join('')}</ul></div>`);
+    }
+    function closePop(){ pop = null; $('gpop').hidden = true; draw(); }
+    function placePop(){
+      if (!pop) return;
+      const p = $('gpop');
+      if (!visibleLL(pop.lng, pop.lat)) { p.style.visibility = 'hidden'; return; }
+      const [x, y] = proj([pop.lng, pop.lat]);
+      const half = Math.min(150, (W - 20) / 2);
+      const lift = mode === 'bars' && !pop.store ? 130 : 0;
+      p.style.visibility = ''; p.style.left = Math.max(half + 10, Math.min(W - half - 10, x)) + 'px'; p.style.top = Math.max(10 + p.offsetHeight + 18, y - Math.min(lift, y * .4)) + 'px';
+    }
+    $('gpopX').addEventListener('click', closePop);
+    $('gpop').addEventListener('click', e => { const b = e.target.closest('.plist button'); if (b) { const s = STORES[+b.dataset.id]; if (mode === 'bars') setView('capsules'); focusStore(s.id); } });
+
+    /* drag to rotate, wheel/pinch to zoom */
+    let last = {x:0, y:0}, flying = null;
+    const zoom = d3.zoom().scaleExtent([0.8, 400])
+      .on('start', e => { if (e.sourceEvent) { stopSpin(); if (flying) { flying.stop(); flying = null; } el.classList.add('dragging'); } })
+      .on('zoom', e => {
+        const t = e.transform, se = e.sourceEvent;
+        if (se && (se.type === 'mousemove' || (se.type === 'touchmove' && se.touches.length === 1) || se.type === 'pointermove')) {
+          const f = 180 / Math.PI / (base * t.k);
+          rot = [rot[0] + (t.x - last.x) * f, Math.max(-89, Math.min(89, rot[1] - (t.y - last.y) * f))];
+        }
+        last = {x:t.x, y:t.y}; k = t.k; draw();
+      })
+      .on('end', () => el.classList.remove('dragging'));
+    svg.call(zoom).on('dblclick.zoom', null);
+    const setK = nk => { svg.call(zoom.scaleTo, nk); k = nk; };
+    svg.on('click', e => { if (state.picking) { const ll = proj.invert(d3.pointer(e)); if (ll && visibleLL(ll[0], ll[1])) { state.picking = false; setMe(ll[1], ll[0], true); } } else if (pop) closePop(); });
+
+    /* auto spin */
+    let lastT = null;
+    d3.timer(t => { if (spinning && !flying) { if (lastT != null) { rot = [rot[0] + (t - lastT) * 0.006, rot[1]]; draw(); } lastT = t; } else lastT = null; });
+    function stopSpin(){ spinning = false; $('spin').textContent = '▶'; $('spin').setAttribute('aria-label','Resume spinning'); }
+    function startSpin(){ spinning = true; $('spin').textContent = '⏸'; $('spin').setAttribute('aria-label','Pause spinning'); }
+    $('spin').addEventListener('click', () => spinning ? stopSpin() : startSpin());
+
+    /* animated camera */
+    function flyTo(lng, lat, nk, ms = 1300){
+      stopSpin();
+      const r0 = [...rot], r1 = [-lng, -lat], k0 = k;
+      r1[0] = r0[0] + ((((r1[0] - r0[0]) % 360) + 540) % 360 - 180);
+      const ir = d3.interpolate(r0, r1);
+      const far = Math.min(k0, nk) > 3 && d3.geoDistance(r0.map(x => -x), r1.map(x => -x)) > 0.2;
+      return new Promise(res => {
+        if (flying) flying.stop();
+        flying = d3.timer(e => {
+          const t = Math.min(1, e / ms), u = d3.easeCubicInOut(t);
+          rot = ir(u);
+          const z = Math.exp(Math.log(k0) + (Math.log(nk) - Math.log(k0)) * u);
+          const dip = far ? Math.sin(Math.PI * u) * 0.6 : 0;
+          setK(Math.max(0.8, z / Math.pow(Math.max(k0, nk), dip)));
+          draw();
+          if (t === 1) { flying.stop(); flying = null; res(); }
+        });
+      });
+    }
+    function fitK(pts){
+      const c = d3.geoCentroid({type:'MultiPoint', coordinates:pts});
+      const spread = Math.max(...pts.map(p => d3.geoDistance(p, c)));
+      return spread > 1.2 ? 1 : Math.max(1, Math.min(150, 0.38 * Math.min(W, H) / (base * Math.sin(Math.max(spread, 0.0015)))));
+    }
+    function fitPoints(pts){
+      if (!pts.length) return flyTo(-HOME[0], -HOME[1], 1);
+      const c = d3.geoCentroid({type:'MultiPoint', coordinates:pts});
+      return flyTo(c[0], c[1], fitK(pts));
+    }
+    $('zin').addEventListener('click', () => { stopSpin(); setK(Math.min(400, k * 2)); draw(); });
+    $('zout').addEventListener('click', () => { setK(Math.max(0.8, k / 2)); draw(); });
+    $('home').addEventListener('click', () => { closePop(); flyTo(-HOME[0], -HOME[1], 1).then(startSpin); });
+    new ResizeObserver(size).observe(el);
+    size();
+    return {setStores, setMode, openPop, closePop, flyTo, fitPoints, draw, get k(){ return k; }};
+  })();
+}
+function popupHtml(s){
+  const dest = encodeURIComponent([s.name, s.address.replace(/\(.*?\)/g,''), s.city, s.country].join(', '));
+  const dist = state.me ? `<dt>Distance</dt><dd>${fmtKm(km(state.me, s))}</dd>` : '';
+  return `<div class="pp"><span class="pp-type" style="--c:${COLORS[s.type]}">${TYPE_LABEL[s.type]}</span>
+  <h3>${esc(s.name)}</h3>
+  <dl><dt>Address</dt><dd>${esc(s.address)}</dd><dt>City</dt><dd>${esc(s.city)}, ${esc(s.country)}</dd><dt>Opened</dt><dd>${esc(fmtDate(s.opened))}</dd>${dist}</dl>
+  ${s.note ? `<p style="margin:8px 0 0;font-size:13px">${esc(s.note)}</p>` : ''}
+  ${s.status === 'unverified' ? '<p class="warn">Unverified: we couldn\'t confirm this store is open.</p>' : ''}
+  <a class="go" href="https://www.google.com/maps/dir/?api=1&destination=${dest}" target="_blank" rel="noopener">Get directions →</a>
+  <a class="src" href="${esc(s.source)}" target="_blank" rel="noopener">Source</a></div>`;
+}
+
+/* filtering */
+function matches(s){
+  if (!state.types.has(s.type)) return false;
+  if (!state.unverified && s.status === 'unverified') return false;
+  if (state.until != null && (s._m == null || s._m > state.until)) return false;
+  if (state.country) { if (state.country.startsWith('region:')) { if (REGION[s.country] !== state.country.slice(7)) return false; } else if (s.country !== state.country) return false; }
+  if (state.q) { const hay = (s.name+' '+s.city+' '+s.country+' '+s.address).toLowerCase(); if (!state.q.split(/\s+/).every(w => hay.includes(w))) return false; }
+  return true;
+}
+let lastCount = -1;
+function render(){
+  let list = STORES.filter(matches);
+  if (state.me) { list.forEach(s => s._d = km(state.me, s)); list.sort((a,b) => a._d - b._d); }
+  else list.sort((a,b) => a.country.localeCompare(b.country) || a.city.localeCompare(b.city) || (a.type === 'flagship' ? -1 : 0) - (b.type === 'flagship' ? -1 : 0) || a.name.localeCompare(b.name));
+  const c = $('count'); c.textContent = list.length;
+  if (lastCount !== list.length) { c.classList.add('bump'); setTimeout(() => c.classList.remove('bump'), 250); lastCount = list.length; }
+  $('list').innerHTML = list.length ? list.map((s, i) => `<button class="card" role="listitem" data-id="${s.id}" style="animation-delay:${Math.min(i,12)*25}ms">
+    <span class="cap t-${s.type}${s.status === 'unverified' ? ' unv' : ''}" aria-hidden="true"></span>
+    <span><h3>${esc(s.name.replace(/^POP MART (?!at )/,''))}${s.status === 'unverified' ? '<span class="tag">unverified</span>' : ''}</h3><p>${esc(s.city)}, ${esc(s.country)} · ${TYPE_LABEL[s.type]}</p></span>
+    ${state.me ? `<span class="km">${fmtKm(s._d)}</span>` : ''}</button>`).join('')
+    : '<div class="empty">No capsules match. Try clearing a filter.</div>';
+  if (globe) globe.setStores(list, state.until == null ? null : new Set(list.filter(s => s._m > state.until - 3).map(s => s.id)));
+  tlInfo(list.length);
+  stats(list);
+}
+function stats(list){
+  const byC = {}; list.forEach(s => byC[s.country] = (byC[s.country] || 0) + 1);
+  const top = Object.entries(byC).sort((a,b) => b[1]-a[1] || a[0].localeCompare(b[0])).slice(0,5);
+  $('sTotal').textContent = list.length; $('sCountries').textContent = Object.keys(byC).length;
+  const max = top.length ? top[0][1] : 1;
+  $('sTop').innerHTML = top.length ? top.map(([c,n]) => `<div class="bar"><span title="${esc(c)}">${esc(c)}</span><i style="width:${Math.max(6, n/max*100)}%"></i><em>${n}</em></div>`).join('') : '<p class="mini">Nothing to count yet.</p>';
+}
+
+/* interactions */
+let qTimer;
+$('q').addEventListener('input', e => { $('searchBox').classList.toggle('has', !!e.target.value); clearTimeout(qTimer); qTimer = setTimeout(() => { state.q = e.target.value.trim().toLowerCase(); render(); }, 120); });
+$('clearQ').addEventListener('click', () => { $('q').value = ''; $('searchBox').classList.remove('has'); state.q = ''; render(); $('q').focus(); });
+$('country').addEventListener('change', e => {
+  state.country = e.target.value; render();
+  if (globe) globe.fitPoints(STORES.filter(matches).map(s => [s.lng, s.lat]));
+});
+document.querySelectorAll('#types .chip[data-type]').forEach(b => b.addEventListener('click', () => {
+  const t = b.dataset.type; if (state.types.has(t)) state.types.delete(t); else state.types.add(t);
+  b.setAttribute('aria-pressed', state.types.has(t)); render();
+}));
+$('unvChip').addEventListener('click', e => { state.unverified = !state.unverified; e.currentTarget.setAttribute('aria-pressed', state.unverified); render(); });
+$('list').addEventListener('click', e => { const b = e.target.closest('.card'); if (b) focusStore(+b.dataset.id); });
+function focusStore(id){
+  const s = STORES[id];
+  if (innerWidth <= 760) setDrawer(false);
+  if (!globe) return;
+  globe.closePop();
+  globe.flyTo(s.lng, s.lat, Math.max(globe.k, 60)).then(() => globe.openPop(s));
+}
+function setMe(lat, lng, picked){
+  state.me = {lat, lng};
+  $('near').classList.add('on'); $('near').textContent = '✕ Clear location';
+  const list = STORES.filter(matches).map(s => ({s, d:km(state.me, s)})).sort((a,b) => a.d - b.d);
+  const n = $('nearNote'); n.hidden = false; n.className = 'note';
+  n.textContent = list.length ? `Closest: ${list[0].s.name.replace(/^POP MART (?!at )/,'')} in ${list[0].s.city}, ${fmtKm(list[0].d)} away. The list is now sorted by distance.` : 'No stores match your filters.';
+  render();
+  if (globe) globe.fitPoints([[lng, lat], ...list.slice(0,5).map(x => [x.s.lng, x.s.lat])]);
+  if (innerWidth <= 760) setDrawer(true);
+  if (picked) toast('Spot set. Showing the nearest stores first.');
+}
+function clearMe(){ state.me = null; if (globe) globe.draw(); $('near').classList.remove('on'); $('near').textContent = '📍 Near me'; $('nearNote').hidden = true; render(); }
+function askPick(why){
+  state.picking = true;
+  const n = $('nearNote'); n.hidden = false; n.className = 'note warn';
+  n.textContent = `${why} Tap anywhere on the globe to set your spot instead.`;
+  if (innerWidth <= 760) setDrawer(false);
+  toast('Tap the globe to set your location');
+}
+$('near').addEventListener('click', () => {
+  if (state.me) return clearMe();
+  if (!navigator.geolocation) return askPick('Your browser can\'t share a location.');
+  $('near').textContent = '⏳ Locating…';
+  try {
+    navigator.geolocation.getCurrentPosition(p => setMe(p.coords.latitude, p.coords.longitude, false),
+      () => { $('near').textContent = '📍 Near me'; askPick('Location wasn\'t shared (some embedded viewers block it).'); },
+      {timeout:8000, maximumAge:600000});
+  } catch(e) { $('near').textContent = '📍 Near me'; askPick('Location isn\'t available here.'); }
+});
+/* drawer + stats toggle (mobile) */
+function setDrawer(open){ $('side').classList.toggle('open', open); $('grab').setAttribute('aria-expanded', open); }
+$('grab').addEventListener('click', () => setDrawer(!$('side').classList.contains('open')));
+$('q').addEventListener('focus', () => { if (innerWidth <= 760) setDrawer(true); });
+let y0 = null;
+$('grab').addEventListener('touchstart', e => { y0 = e.touches[0].clientY; }, {passive:true});
+$('grab').addEventListener('touchend', e => { if (y0 == null) return; const dy = e.changedTouches[0].clientY - y0; if (Math.abs(dy) > 30) setDrawer(dy < 0); y0 = null; });
+$('toggleStats').addEventListener('click', e => { const s = $('stats').classList.toggle('show'); e.currentTarget.setAttribute('aria-expanded', s); e.currentTarget.textContent = s ? 'Hide stats' : 'Stats'; });
+/* view toggle */
+function setView(v){ document.querySelectorAll('.viewseg button').forEach(b => b.setAttribute('aria-pressed', b.dataset.view === v)); if (globe) globe.setMode(v); }
+document.querySelectorAll('.viewseg button').forEach(b => b.addEventListener('click', () => setView(b.dataset.view)));
+
+/* opening timeline */
+const MONTHS = STORES.map(s => s._m).filter(m => m != null);
+const NOW = monthOf(DATA.updated), START = Math.min(...MONTHS) - 1;
+const undated = STORES.filter(s => s._m == null).length;
+const tl = $('tl'); tl.min = START; tl.max = NOW; tl.value = NOW;
+const monthName = m => new Date(Date.UTC(Math.floor(m/12), m % 12, 1)).toLocaleDateString('en-GB', {month:'short', year:'numeric', timeZone:'UTC'});
+function tlInfo(n){
+  $('tlLabel').textContent = state.until == null ? 'Now' : monthName(state.until);
+  $('tlInfo').textContent = state.until == null ? `${n} stores` : `${n} open by then`;
+  $('tlNote').textContent = state.until == null ? 'Drag back in time, or press play to watch Pop Mart spread.' : `${undated} stores with no known opening date (or still planned) show only at "Now".`;
+}
+function setUntil(v){ v = +v; state.until = v >= NOW ? null : v; tl.value = v; render(); }
+tl.addEventListener('input', e => { stopPlay(); setUntil(e.target.value); });
+let playTimer = null;
+function stopPlay(){ clearInterval(playTimer); playTimer = null; $('tlPlay').textContent = '▶'; $('tlPlay').setAttribute('aria-label','Play the opening timeline'); }
+$('tlPlay').addEventListener('click', () => {
+  if (playTimer) return stopPlay();
+  if (state.until == null) setUntil(START);
+  $('tlPlay').textContent = '⏸'; $('tlPlay').setAttribute('aria-label','Pause the timeline');
+  playTimer = setInterval(() => { const v = +tl.value + 1; setUntil(v); if (v >= NOW) stopPlay(); }, 160);
+});
+
+render();
+}
+</script>
+</body>
+</html>

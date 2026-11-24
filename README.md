@@ -15,6 +15,7 @@ An interactive, single-page map of Pop Mart retail stores worldwide (flagships, 
 - Sidebar search (city, country, store name), country/region and type filters, live count
 - Clickable store list that flies the globe to each store
 - Stats panel: total stores, number of countries, top 5 countries
+- Revenue & profit: Pop Mart's reported H1 2026 group revenue and net profit, revenue by reporting region (Greater China, Asia Pacific, Americas, Europe & other), plus each store's regional figures in its popup (region revenue, retail-store revenue and store count, segment operating profit). Pop Mart does not publish per-store revenue or profit, so none is shown
 - "Near me" button using browser location (tap-the-map fallback)
 - Mobile layout with a bottom drawer
 
@@ -25,6 +26,8 @@ An interactive, single-page map of Pop Mart retail stores worldwide (flagships, 
 Store data lives in the JSON array inside the `<script type="application/json" id="store-data">` tag in `index.html`. One store per line, with fields:
 `name, country, city, address, type (flagship | standard | popup), opened, lat, lng, status (verified | unverified), note, source`.
 Change the `"updated"` date at the top of the JSON when you edit it.
+
+Revenue and profit figures live in the `"financials"` object in the same JSON (RMB thousand, from Pop Mart's interim results announcement for the six months to 30 June 2026). Countries map to Pop Mart's reporting regions in `FIN_REGION`; Middle East stores (Qatar, UAE) are counted under Asia Pacific, following the report's definition of Asia Pacific as Asia and Oceania outside the PRC.
 
 ## Data notes
 Data last updated 23 November 2026. It lists 155 stores, about 23% of the 676 stores Pop Mart reported at 30 June 2026. Mainland China is still under-represented (25 stores listed of about 455). Several China entries come from an investor's store-tracking post and are marked unverified. Coordinates are approximate (mall or street level). Sources are listed in the page footer.

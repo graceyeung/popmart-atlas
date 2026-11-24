@@ -91,7 +91,16 @@ select{height:44px;border-radius:14px;border:3px solid var(--line);background:va
 .mapwrap{position:relative;overflow:hidden;border-radius:var(--r) 0 0 var(--r);margin:10px 0 10px 0;box-shadow:inset 0 0 0 4px rgba(0,0,0,.05)}
 #map{position:absolute;inset:0;background:var(--sea)}
 .float{position:absolute;z-index:1000;background:var(--panel);border-radius:var(--r);box-shadow:var(--shadow);padding:14px 16px}
-.stats{top:14px;right:14px;width:270px}
+.stats{top:14px;right:14px;width:270px;max-height:calc(100% - 28px);overflow-y:auto;scrollbar-width:thin}
+.money-h{margin-top:14px;padding-top:12px;border-top:3px dotted var(--line)}
+.money-h+.nums .num b{font-size:clamp(20px,2.2vw,24px)}
+.bars.money .bar{grid-template-columns:100px minmax(0,1fr) 52px}
+.bars.money .bar.on span{text-decoration:underline 3px var(--flag);text-underline-offset:3px}
+.bars.money .bar:not(.on) i{opacity:.45}
+.bars.money.all .bar i{opacity:1}
+.pp .fin{margin:10px 0 0;padding-top:8px;border-top:2px dotted var(--line)}
+.pp .fin h4{margin:0 0 4px;font:600 14px Fredoka}
+.pp .fin p{margin:6px 0 0;font-size:12px;color:var(--soft);font-weight:700}
 .stats h2{font-size:18px;margin-bottom:8px}
 .nums{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
 .num{background:var(--card);border-radius:16px;padding:8px 10px}
@@ -156,6 +165,7 @@ select{height:44px;border-radius:14px;border:3px solid var(--line);background:va
 .globe-ctl button{width:44px;height:44px;border:0;border-bottom:2px solid var(--line);background:var(--panel);color:var(--ink);font:700 22px Fredoka;cursor:pointer}
 .globe-ctl button:last-child{border-bottom:0}.globe-ctl button:hover{background:var(--card)}
 .gpop{position:absolute;z-index:1050;width:300px;max-width:calc(100% - 20px);transform:translate(-50%,calc(-100% - 18px));border-radius:22px;background:var(--panel);color:var(--ink);box-shadow:0 8px 0 rgba(0,0,0,.18),0 10px 30px rgba(0,0,0,.25);padding:16px 18px;font-size:14px;line-height:1.4}
+#gpopBody{max-height:calc(100vh - 150px);overflow-y:auto;scrollbar-width:thin}
 .gpop[hidden]{display:none}
 .gpop::after{content:"";position:absolute;left:50%;bottom:-8px;width:17px;height:17px;margin-left:-9px;transform:rotate(45deg);background:var(--panel)}
 .gpop .x{position:absolute;top:8px;right:8px;width:30px;height:30px;border-radius:50%;border:0;background:var(--card);font:700 20px/28px Fredoka;color:var(--ink);cursor:pointer}
@@ -255,6 +265,13 @@ select{height:44px;border-radius:14px;border:3px solid var(--line);background:va
       </div>
       <div class="bars" id="sTop"></div>
       <p class="mini">Top 5 by stores matching your filters</p>
+      <h2 class="money-h">Revenue &amp; profit</h2>
+      <div class="nums">
+        <div class="num"><b id="fRev">–</b><small>revenue</small></div>
+        <div class="num"><b id="fProfit">–</b><small>net profit</small></div>
+      </div>
+      <div class="bars money" id="fRegions"></div>
+      <p class="mini" id="fNote"></p>
     </section>
     <div class="float legend" aria-label="Legend">
       <div><span class="cap t-flagship"></span>Flagship</div>
@@ -271,6 +288,25 @@ select{height:44px;border-radius:14px;border:3px solid var(--line);background:va
 {
 "updated": "2026-11-23",
 "globalTotal": {"stores": 676, "asOf": "30 June 2026", "source": "https://insideretail.asia/2026/08/21/after-labubu-what-will-pop-mart-turn-into-its-next-global-hit/"},
+"financials": {
+  "period": "H1 2026", "periodLong": "six months to 30 June 2026", "unit": "RMB thousand",
+  "source": "https://prod-out-res.popmart.com/cms/INTERIM_RESULTS_ANNOUNCEMENT_FOR_THE_SIX_MONTHS_ENDED_30_JUNE_2026_AND_SUPPLEMENTAL_ANNOUNCEMENT_ON_GRANT_OF_AWARDS_f536cb6bda.pdf",
+  "group": {"revenue": 17172921, "revenueYoY": 23.8, "grossProfit": 11965740, "operatingProfit": 6724746, "netProfit": 5100310, "netProfitYoY": 8.9, "adjNetProfit": 5155777},
+  "regions": {
+    "prc":      {"label": "Greater China", "long": "the PRC (Chinese mainland, Hong Kong, Macau and Taiwan)", "revenue": 12200509, "yoy": 47.3, "segment": "prc"},
+    "apac":     {"label": "Asia Pacific", "long": "Asia Pacific (Asia and Oceania outside the PRC)", "revenue": 2575045, "yoy": -9.7, "retailRevenue": 1716171, "stores": 90, "segment": "overseas"},
+    "americas": {"label": "Americas", "long": "the Americas", "revenue": 1891637, "yoy": -16.5, "retailRevenue": 903063, "stores": 86, "segment": "overseas"},
+    "europe":   {"label": "Europe & other", "long": "Europe and other regions", "revenue": 505730, "yoy": 5.9, "retailRevenue": 403066, "stores": 45, "segment": "overseas"}
+  },
+  "subRegions": {
+    "mainland": {"label": "Chinese mainland", "retailRevenue": 5427444, "stores": 419},
+    "hmt":      {"label": "Hong Kong, Macau and Taiwan", "retailRevenue": 662242, "stores": 36}
+  },
+  "segments": {
+    "prc":      {"label": "all of Greater China", "revenue": 12200509, "result": 6471322},
+    "overseas": {"label": "all overseas", "revenue": 4972412, "result": 1508492}
+  }
+},
 "stores": [
 {"name":"POP MART Global Flagship (HY Plaza)","country":"China","city":"Shanghai","address":"F1, HY Plaza, 288 East Nanjing Road, Huangpu","type":"flagship","opened":"2022","lat":31.2366,"lng":121.4800,"status":"verified","source":"https://english.shanghai.gov.cn/en-TrendyStores/20251205/c6eb98d2b2224f2dbd4d009ac0a5d040.html"},
 {"name":"POP MART Shimao Festival City Flagship","country":"China","city":"Shanghai","address":"G03 & M03, 1F-2F, Shimao Festival City, 829 East Nanjing Road","type":"flagship","opened":"2025-12","lat":31.2353,"lng":121.4748,"status":"verified","source":"https://english.shanghai.gov.cn/en-TrendyStores/20251205/c6eb98d2b2224f2dbd4d009ac0a5d040.html"},
@@ -439,6 +475,23 @@ const DATA = JSON.parse(document.getElementById('store-data').textContent);
 function monthOf(o){ if (!o || /planned/i.test(o)) return null; const m = /^(\d{4})(?:-(\d{2}))?/.exec(o); return m ? +m[1]*12 + (m[2] ? +m[2]-1 : 0) : null; }
 const STORES = DATA.stores.map((s, i) => ({...s, id: i, _m: monthOf(s.opened)}));
 const REGION = {"China":"Greater China","Hong Kong SAR":"Greater China","Macau SAR":"Greater China","Taiwan":"Greater China","Japan":"East Asia","South Korea":"East Asia","Singapore":"Southeast Asia","Malaysia":"Southeast Asia","Thailand":"Southeast Asia","Indonesia":"Southeast Asia","Philippines":"Southeast Asia","Vietnam":"Southeast Asia","Australia":"Oceania","New Zealand":"Oceania","United States":"North America","Canada":"North America","Mexico":"North America","Qatar":"Middle East","United Arab Emirates":"Middle East","United Kingdom":"Europe","France":"Europe","Spain":"Europe","Germany":"Europe","Italy":"Europe","Netherlands":"Europe"};
+/* revenue & profit: Pop Mart only reports these by region, never per store */
+const FIN = DATA.financials;
+const FIN_REGION = c => ({"China":"prc","Hong Kong SAR":"prc","Macau SAR":"prc","Taiwan":"prc"})[c]
+  || ({"North America":"americas","Europe":"europe"})[REGION[c]] || 'apac';
+const FIN_SUB = c => c === 'China' ? 'mainland' : FIN_REGION(c) === 'prc' ? 'hmt' : null;
+const rmb = k => { const v = k * 1000; return 'RMB ' + (v >= 1e9 ? (v/1e9).toFixed(2) + 'bn' : Math.round(v/1e6).toLocaleString('en-GB') + 'm'); };
+const pct = (a, b) => (a / b * 100).toFixed(1) + '%';
+const yoy = p => `<span style="color:${p < 0 ? 'var(--flag)' : 'var(--mint)'}">${p > 0 ? '+' : ''}${p}%</span>`;
+function finHtml(s){
+  const r = FIN.regions[FIN_REGION(s.country)], sub = FIN.subRegions[FIN_SUB(s.country)], seg = FIN.segments[r.segment];
+  const shops = sub || r, where = sub && sub.label;
+  return `<div class="fin"><h4>${esc(r.label)} · ${FIN.period}</h4><dl>
+    <dt>Region revenue</dt><dd>${rmb(r.revenue)} (${yoy(r.yoy)} YoY)</dd>
+    <dt>From stores</dt><dd>${rmb(shops.retailRevenue)} (${shops.stores} stores in ${sub ? esc(where) : 'the region'})</dd>
+    <dt>Profit</dt><dd>${rmb(seg.result)} operating, ${esc(seg.label)} (${pct(seg.result, seg.revenue)} margin)</dd></dl>
+    <p>Pop Mart doesn't report single stores, so these are its figures for this store's region.</p></div>`;
+}
 const TYPE_LABEL = {flagship:'Flagship', standard:'Store', popup:'Pop-up'};
 const COLORS = {flagship:'#ff4f8b', standard:'#2b9cf2', popup:'#ff9a1f'};
 const $ = id => document.getElementById(id);
@@ -460,7 +513,7 @@ function fmtKm(d){ return d < 1 ? Math.round(d*1000)+' m' : d < 100 ? d.toFixed(
 $('updated').textContent = fmtDate(DATA.updated);
 const nVer = STORES.filter(s => s.status === 'verified').length;
 $('cover').textContent = `${STORES.length} stores listed (${nVer} verified). That's about ${Math.round(STORES.length/DATA.globalTotal.stores*100)}% of the ${DATA.globalTotal.stores} stores Pop Mart reported on ${DATA.globalTotal.asOf}. Most of the gap is in mainland China.`;
-const srcs = [DATA.globalTotal.source, ...new Set(STORES.map(s => s.source))];
+const srcs = [DATA.globalTotal.source, DATA.financials.source, ...new Set(STORES.map(s => s.source))];
 $('sources').innerHTML = [...new Set(srcs)].map(u => { let h = u; try { h = new URL(u).hostname.replace(/^www\./,''); } catch(e){} return `<li><a href="${esc(u)}" target="_blank" rel="noopener">${esc(h)}</a></li>`; }).join('');
 
 /* country select */
@@ -695,6 +748,7 @@ function popupHtml(s){
   <dl><dt>Address</dt><dd>${esc(s.address)}</dd><dt>City</dt><dd>${esc(s.city)}, ${esc(s.country)}</dd><dt>Opened</dt><dd>${esc(fmtDate(s.opened))}</dd>${dist}</dl>
   ${s.note ? `<p style="margin:8px 0 0;font-size:13px">${esc(s.note)}</p>` : ''}
   ${s.status === 'unverified' ? '<p class="warn">Unverified: we couldn\'t confirm this store is open.</p>' : ''}
+  ${finHtml(s)}
   <a class="go" href="https://www.google.com/maps/dir/?api=1&destination=${dest}" target="_blank" rel="noopener">Get directions →</a>
   <a class="src" href="${esc(s.source)}" target="_blank" rel="noopener">Source</a></div>`;
 }
@@ -730,7 +784,16 @@ function stats(list){
   $('sTotal').textContent = list.length; $('sCountries').textContent = Object.keys(byC).length;
   const max = top.length ? top[0][1] : 1;
   $('sTop').innerHTML = top.length ? top.map(([c,n]) => `<div class="bar"><span title="${esc(c)}">${esc(c)}</span><i style="width:${Math.max(6, n/max*100)}%"></i><em>${n}</em></div>`).join('') : '<p class="mini">Nothing to count yet.</p>';
+  /* highlight the reporting regions that the filtered stores fall in */
+  const on = new Set(list.map(s => FIN_REGION(s.country)));
+  const regs = Object.entries(FIN.regions), rmax = Math.max(...regs.map(([,r]) => r.revenue));
+  $('fRegions').classList.toggle('all', on.size === regs.length || !list.length);
+  $('fRegions').innerHTML = regs.map(([k,r]) => `<div class="bar${on.has(k) ? ' on' : ''}" title="${esc(r.long)}: ${rmb(r.revenue)}, ${r.yoy > 0 ? '+' : ''}${r.yoy}% YoY"><span>${esc(r.label)}</span><i style="width:${Math.max(6, r.revenue/rmax*100)}%"></i><em>${rmb(r.revenue).replace('RMB ','')}</em></div>`).join('');
 }
+const G = FIN.group;
+$('fRev').textContent = rmb(G.revenue).replace('RMB ','¥');
+$('fProfit').textContent = rmb(G.netProfit).replace('RMB ','¥');
+$('fNote').innerHTML = `Whole company, ${FIN.periodLong}: revenue ${G.revenueYoY > 0 ? '+' : ''}${G.revenueYoY}% YoY, ${pct(G.netProfit, G.revenue)} net margin. Bars: revenue by region (underlined = matches your filters). Pop Mart doesn't report per-store figures. <a href="${esc(FIN.source)}" target="_blank" rel="noopener">Source</a>`;
 
 /* interactions */
 let qTimer;

@@ -1362,7 +1362,7 @@ function fmtKm(d){ return d < 1 ? Math.round(d*1000)+' m' : d < 100 ? d.toFixed(
 /* footer: date, coverage, sources */
 $('updated').textContent = fmtDate(DATA.updated);
 const nVer = STORES.filter(s => s.status === 'verified').length;
-$('cover').textContent = `${STORES.length} stores listed (${nVer} verified). Pop Mart reported ${DATA.globalTotal.stores} stores on ${DATA.globalTotal.asOf}. The list runs higher because most mainland China entries come from Baidu Maps, which still lists some stores that have since closed or moved.`;
+$('cover').textContent = `${STORES.length} stores listed (${nVer} verified). Why more than Pop Mart's official ${DATA.globalTotal.stores} (as of ${DATA.globalTotal.asOf})? Most China stores here come from Baidu Maps, which can still show stores that have since closed or moved, and new stores have opened since June. Robo shops and pop-ups aren't counted.`;
 const srcs = [DATA.globalTotal.source, DATA.financials.source, ...new Set(STORES.map(s => /^https:\/\/map\.baidu\.com\//.test(s.source) ? 'https://map.baidu.com/' : s.source))];
 $('sources').innerHTML = [...new Set(srcs)].map(u => { let h = u; try { h = new URL(u).hostname.replace(/^www\./,''); } catch(e){} return `<li><a href="${esc(u)}" target="_blank" rel="noopener">${esc(h)}</a></li>`; }).join('');
 
